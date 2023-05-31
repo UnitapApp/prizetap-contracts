@@ -1,0 +1,19 @@
+{
+  "name": "unitap-fund-contract",
+  "version": "1.0.0",
+  "description": "Unitap fund contract",
+  "scripts": {
+    "deploy": "./deploy.sh"
+  },
+  "dependencies": {
+    "@chainlink/contracts": "^0.6.1",
+    "@openzeppelin/contracts": "^4.8.3",
+    "dotenv": "^16.0.3",
+    "hardhat": "^2.14.0",
+    "web3": "^1.10.0"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
+    "@nomicfoundation/hardhat-verify": "^1.0.0"
+  }
+}
