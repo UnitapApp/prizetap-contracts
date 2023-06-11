@@ -150,5 +150,13 @@ abstract contract AbstractPrizetapRaffle is
         payable(to).transfer(amount);
     }
 
+    function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _pause();
+    }
+
+    function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _unpause();
+    }
+
     receive() external payable {}
 }
