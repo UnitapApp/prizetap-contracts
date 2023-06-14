@@ -41,12 +41,14 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
     constructor(
         address _ChainlinkVRFCoordinator,
         uint64 _ChainlinkVRFSubscriptionId,
-        bytes32 _ChainlinkKeyHash
+        bytes32 _ChainlinkKeyHash,
+        address operator
     )
         AbstractPrizetapRaffle(
             _ChainlinkVRFCoordinator,
             _ChainlinkVRFSubscriptionId,
-            _ChainlinkKeyHash
+            _ChainlinkKeyHash,
+            operator
         )
     {}
 
