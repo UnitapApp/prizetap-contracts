@@ -140,8 +140,8 @@ abstract contract AbstractPrizetapRaffle is
                 hasRole(DEFAULT_ADMIN_ROLE, signer),
             "Invalid signature"
         );
-        require(!usedNonces[signer][nonce], "Signature is already used");
-        usedNonces[signer][nonce] = true;
+        require(!usedNonces[msg.sender][nonce], "Signature is already used");
+        usedNonces[msg.sender][nonce] = true;
     }
 
     function emergencyWithdraw(
