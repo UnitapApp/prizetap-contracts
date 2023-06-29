@@ -105,6 +105,7 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         _verifyNonce(nonce);
 
         raffles[raffleId].participants.push(msg.sender);
+        emit Participate(msg.sender, raffleId);
     }
 
     function heldRaffle(

@@ -104,6 +104,7 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
         _verifyNonce(nonce);
 
         raffles[raffleId].participants.push(msg.sender);
+        emit Participate(msg.sender, raffleId);
     }
 
     function heldRaffle(

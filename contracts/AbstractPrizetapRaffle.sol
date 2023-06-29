@@ -23,6 +23,7 @@ abstract contract AbstractPrizetapRaffle is
 
     event VRFRequestSent(uint256 requestId);
     event VRFRequestFulfilled(uint256 requestId, uint256[] randomWords);
+    event Participate(address user, uint256 raffleId);
 
     bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
 
