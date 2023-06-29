@@ -105,6 +105,10 @@ abstract contract AbstractPrizetapRaffle is
         bytes memory signature
     ) external virtual;
 
+    function getParticipants(
+        uint256 raffleId
+    ) public view virtual returns (address[] memory);
+
     function requestRandomWords(uint256 raffleId) internal {
         // Will revert if subscription is not set and funded.
         uint256 requestId = CHAINLINK_VRF_COORDINATOR.requestRandomWords(

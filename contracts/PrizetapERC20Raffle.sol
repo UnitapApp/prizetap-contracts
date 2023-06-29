@@ -160,4 +160,11 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
             );
         }
     }
+
+    function getParticipants(
+        uint256 raffleId
+    ) public view override returns (address[] memory) {
+        Raffle memory raffle = raffles[raffleId];
+        return raffle.participants;
+    }
 }
