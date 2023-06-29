@@ -101,7 +101,6 @@ abstract contract AbstractPrizetapRaffle is
 
     function claimPrize(
         uint256 raffleId,
-        uint32 nonce,
         bytes memory signature
     ) external virtual;
 
@@ -127,11 +126,15 @@ abstract contract AbstractPrizetapRaffle is
         emit VRFRequestFulfilled(_requestId, _randomWords);
     }
 
+    function _verifyNonce(uint32 nonce) internal {
+        require(!usedNonces[msg.sender][nonce], "Signature is already used");
+        usedNonces[msg.sender][nonce] = true;
+    }
+
     function _verifySignature(
         bytes memory data,
-        bytes memory signature,
-        uint32 nonce
-    ) internal {
+        bytes memory signature
+    ) internal view {
         address signer = keccak256(data).toEthSignedMessageHash().recover(
             signature
         );
@@ -140,8 +143,6 @@ abstract contract AbstractPrizetapRaffle is
                 hasRole(DEFAULT_ADMIN_ROLE, signer),
             "Invalid signature"
         );
-        require(!usedNonces[msg.sender][nonce], "Signature is already used");
-        usedNonces[msg.sender][nonce] = true;
     }
 
     function emergencyWithdraw(
