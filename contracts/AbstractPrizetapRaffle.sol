@@ -90,7 +90,8 @@ abstract contract AbstractPrizetapRaffle is
     function participateInRaffle(
         uint256 raffleId,
         uint32 nonce,
-        bytes memory signature
+        bytes memory signature,
+        uint256 multiplier
     ) external virtual;
 
     function heldRaffle(uint256 raffleId) external virtual;

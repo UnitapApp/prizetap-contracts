@@ -84,26 +84,30 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
     function participateInRaffle(
         uint256 raffleId,
         uint32 nonce,
-        bytes memory signature
+        bytes memory signature,
+        uint256 multiplier
     ) external override whenNotPaused isOpenRaffle(raffleId) {
         require(
             raffles[raffleId].endTime >= block.timestamp,
             "Raffle time is up"
         );
         require(
-            raffles[raffleId].participants.length <
+            raffles[raffleId].participants.length + multiplier <=
                 raffles[raffleId].maxParticipants,
             "The maximum number of participants has been reached"
         );
         bytes memory encodedData = abi.encodePacked(
             msg.sender,
             raffleId,
-            nonce
+            nonce,
+            multiplier
         );
         _verifySignature(encodedData, signature);
         _verifyNonce(nonce);
 
-        raffles[raffleId].participants.push(msg.sender);
+        for (uint256 i = 0; i < multiplier; i++) {
+            raffles[raffleId].participants.push(msg.sender);
+        }
         emit Participate(msg.sender, raffleId);
     }
 
