@@ -11,6 +11,7 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         address collection;
         uint256 tokenId;
         uint256 maxParticipants;
+        uint256 startTime;
         uint256 endTime;
         address[] participants;
         address winner; // Winner = address(0) means raffle is not held yet
@@ -59,10 +60,15 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         address collection,
         uint256 tokenId,
         uint256 maxParticipants,
+        uint256 startTime,
         uint256 endTime
     ) external payable {
         require(maxParticipants > 0, "maxParticipants <= 0");
-        require(endTime > block.timestamp, "endTime <= now");
+        require(
+            startTime > block.timestamp + validationPeriod,
+            "startTime <= now + validationPeriod"
+        );
+        require(endTime > startTime, "endTime <= startTime");
 
         IERC721(collection).safeTransferFrom(
             msg.sender,
@@ -78,6 +84,7 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         raffle.collection = collection;
         raffle.tokenId = tokenId;
         raffle.maxParticipants = maxParticipants;
+        raffle.startTime = startTime;
         raffle.endTime = endTime;
         raffle.exists = true;
     }
@@ -88,6 +95,10 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         bytes memory signature,
         uint256 multiplier
     ) external override whenNotPaused isOpenRaffle(raffleId) {
+        require(
+            raffles[raffleId].startTime < block.timestamp,
+            "Raffle is not started"
+        );
         require(
             raffles[raffleId].endTime >= block.timestamp,
             "Raffle time is up"
