@@ -32,6 +32,8 @@ abstract contract AbstractPrizetapRaffle is
 
     uint256 public lastRaffleId = 0;
 
+    uint256 public validationPeriod = 7 days;
+
     VRFCoordinatorV2Interface private immutable CHAINLINK_VRF_COORDINATOR;
 
     uint64 chainlinkVrfSubscriptionId;
@@ -73,6 +75,13 @@ abstract contract AbstractPrizetapRaffle is
         );
         chainlinkVrfSubscriptionId = _ChainlinkVRFSubscriptionId;
         chainlinkKeyHash = _ChainlinkKeyHash;
+    }
+
+    function setValidationPeriod(
+        uint256 periodSeconds
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(periodSeconds > 0, "Invalid period");
+        validationPeriod = periodSeconds;
     }
 
     function setCallbackGasLimit(
