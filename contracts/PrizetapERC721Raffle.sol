@@ -14,6 +14,7 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         uint256 startTime;
         uint256 endTime;
         address[] participants;
+        uint256 participantsCount;
         address winner; // Winner = address(0) means raffle is not held yet
         bool exists;
         Status status;
@@ -104,7 +105,7 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
             "Raffle time is up"
         );
         require(
-            raffles[raffleId].participants.length + multiplier <=
+            raffles[raffleId].participantsCount <
                 raffles[raffleId].maxParticipants,
             "The maximum number of participants has been reached"
         );
@@ -117,9 +118,12 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         _verifySignature(encodedData, signature);
         _verifyNonce(nonce);
 
+        raffles[raffleId].participantsCount += 1;
+
         for (uint256 i = 0; i < multiplier; i++) {
             raffles[raffleId].participants.push(msg.sender);
         }
+
         emit Participate(msg.sender, raffleId);
     }
 
