@@ -43,6 +43,18 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         _;
     }
 
+    modifier hasEnded(uint256 raffleId) {
+        require(
+            raffles[raffleId].participants.length > 0,
+            "There is no participant in raffle"
+        );
+        require(
+            raffles[raffleId].endTime < block.timestamp,
+            "The raffle time has not ended"
+        );
+        _;
+    }
+
     constructor(
         address _ChainlinkVRFCoordinator,
         uint64 _ChainlinkVRFSubscriptionId,
@@ -135,11 +147,8 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         whenNotPaused
         onlyOperatorOrAdmin
         isOpenRaffle(raffleId)
+        hasEnded(raffleId)
     {
-        require(
-            raffles[raffleId].endTime < block.timestamp,
-            "The raffle time has not ended"
-        );
         raffles[raffleId].status = Status.CLOSED;
         requestRandomWords(raffleId);
     }
@@ -147,11 +156,7 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
     function drawRaffle(
         uint256 raffleId,
         uint256[] memory randomWords
-    ) internal override {
-        require(
-            raffles[raffleId].participants.length > 0,
-            "There is no participant in raffle"
-        );
+    ) internal override hasEnded(raffleId) {
         uint256 indexOfWinner = randomWords[0] %
             raffles[raffleId].participants.length;
 
