@@ -156,6 +156,10 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
         uint256 raffleId,
         uint256[] memory randomWords
     ) internal override hasEnded(raffleId) {
+        require(
+            raffles[raffleId].status == Status.CLOSED,
+            "The raffle is not closed"
+        );
         uint256 indexOfWinner = randomWords[0] %
             raffles[raffleId].participants.length;
 
