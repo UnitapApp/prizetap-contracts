@@ -10,6 +10,7 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
         uint256 prizeAmount;
         address currency; // Use null address for native currency
         uint256 maxParticipants;
+        uint256 maxMultiplier;
         uint256 startTime;
         uint256 endTime;
         address[] participants;
@@ -72,11 +73,13 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
         uint256 amount,
         address currency,
         uint256 maxParticipants,
+        uint256 maxMultiplier,
         uint256 startTime,
         uint256 endTime
     ) external payable {
         require(amount > 0, "amount <= 0");
         require(maxParticipants > 0, "maxParticipants <= 0");
+        require(maxMultiplier > 0, "maxMultiplier <= 0");
         require(
             startTime > block.timestamp + validationPeriod,
             "startTime <= now + validationPeriod"
@@ -98,6 +101,7 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
         raffle.prizeAmount = amount;
         raffle.currency = currency;
         raffle.maxParticipants = maxParticipants;
+        raffle.maxMultiplier = maxMultiplier;
         raffle.startTime = startTime;
         raffle.endTime = endTime;
         raffle.exists = true;
@@ -143,6 +147,10 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
             raffles[raffleId].participantsCount <
                 raffles[raffleId].maxParticipants,
             "The maximum number of participants has been reached"
+        );
+        require(
+            raffles[raffleId].maxMultiplier >= multiplier,
+            "Invalid multiplier"
         );
         bytes memory encodedData = abi.encodePacked(
             msg.sender,
