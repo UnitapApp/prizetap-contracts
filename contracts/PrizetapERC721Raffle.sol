@@ -59,12 +59,14 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         address _ChainlinkVRFCoordinator,
         uint64 _ChainlinkVRFSubscriptionId,
         bytes32 _ChainlinkKeyHash,
+        address admin,
         address operator
     )
         AbstractPrizetapRaffle(
             _ChainlinkVRFCoordinator,
             _ChainlinkVRFSubscriptionId,
             _ChainlinkKeyHash,
+            admin,
             operator
         )
     {}

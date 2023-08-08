@@ -69,9 +69,10 @@ abstract contract AbstractPrizetapRaffle is
         address _ChainlinkVRFCoordinator,
         uint64 _ChainlinkVRFSubscriptionId,
         bytes32 _ChainlinkKeyHash,
+        address admin,
         address operator
     ) VRFConsumerBaseV2(_ChainlinkVRFCoordinator) {
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _setupRole(DEFAULT_ADMIN_ROLE, admin);
         _setupRole(OPERATOR_ROLE, operator);
         CHAINLINK_VRF_COORDINATOR = VRFCoordinatorV2Interface(
             _ChainlinkVRFCoordinator
