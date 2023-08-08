@@ -15,10 +15,12 @@ abstract contract AbstractPrizetapRaffle is
     using ECDSA for bytes32;
 
     enum Status {
+        PENDING,
         OPEN,
         CLOSED,
         HELD,
-        CLAIMED
+        CLAIMED,
+        REJECTED
     }
 
     event VRFRequestSent(uint256 requestId);
@@ -95,6 +97,10 @@ abstract contract AbstractPrizetapRaffle is
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         vrfRequestConfirmations = count;
     }
+
+    function confirmRaffle(uint256 raffleId) external virtual;
+
+    function rejectRaffle(uint256 raffleId) external virtual;
 
     function participateInRaffle(
         uint256 raffleId,

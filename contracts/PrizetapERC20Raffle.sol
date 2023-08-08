@@ -101,6 +101,28 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
         raffle.exists = true;
     }
 
+    function confirmRaffle(
+        uint256 raffleId
+    ) external override onlyOperatorOrAdmin {
+        require(raffles[raffleId].exists, "The raffle does not exist");
+        require(
+            raffles[raffleId].status == Status.PENDING,
+            "Raffle is not pending"
+        );
+        raffles[raffleId].status = Status.OPEN;
+    }
+
+    function rejectRaffle(
+        uint256 raffleId
+    ) external override onlyOperatorOrAdmin {
+        require(raffles[raffleId].exists, "The raffle does not exist");
+        require(
+            raffles[raffleId].status == Status.PENDING,
+            "Raffle is not pending"
+        );
+        raffles[raffleId].status = Status.REJECTED;
+    }
+
     function participateInRaffle(
         uint256 raffleId,
         uint32 nonce,
