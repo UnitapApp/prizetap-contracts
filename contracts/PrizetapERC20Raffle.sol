@@ -211,6 +211,31 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
         }
     }
 
+    function refundPrize(uint256 raffleId) external override whenNotPaused {
+        require(raffles[raffleId].participants.length == 0, "participants > 0");
+        require(
+            raffles[raffleId].status == Status.REJECTED,
+            "The raffle is not rejected"
+        );
+        require(
+            msg.sender == raffles[raffleId].initiator,
+            "Permission denied!"
+        );
+
+        raffles[raffleId].status = Status.REFUNDED;
+
+        address currency = raffles[raffleId].currency;
+
+        if (currency == address(0)) {
+            payable(msg.sender).transfer(raffles[raffleId].prizeAmount);
+        } else {
+            IERC20(currency).transfer(
+                msg.sender,
+                raffles[raffleId].prizeAmount
+            );
+        }
+    }
+
     function getParticipants(
         uint256 raffleId
     ) public view override returns (address[] memory) {

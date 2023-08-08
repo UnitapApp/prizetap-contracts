@@ -20,7 +20,8 @@ abstract contract AbstractPrizetapRaffle is
         CLOSED,
         HELD,
         CLAIMED,
-        REJECTED
+        REJECTED,
+        REFUNDED
     }
 
     event VRFRequestSent(uint256 requestId);
@@ -120,6 +121,8 @@ abstract contract AbstractPrizetapRaffle is
         uint256 raffleId,
         bytes memory signature
     ) external virtual;
+
+    function refundPrize(uint256 raffleId) external virtual;
 
     function getParticipants(
         uint256 raffleId

@@ -208,6 +208,26 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         );
     }
 
+    function refundPrize(uint256 raffleId) external override whenNotPaused {
+        require(raffles[raffleId].participants.length == 0, "participants > 0");
+        require(
+            raffles[raffleId].status == Status.REJECTED,
+            "The raffle is not rejected"
+        );
+        require(
+            msg.sender == raffles[raffleId].initiator,
+            "Permission denied!"
+        );
+
+        raffles[raffleId].status = Status.REFUNDED;
+
+        IERC721(raffles[raffleId].collection).safeTransferFrom(
+            address(this),
+            msg.sender,
+            raffles[raffleId].tokenId
+        );
+    }
+
     function getParticipants(
         uint256 raffleId
     ) public view override returns (address[] memory) {
