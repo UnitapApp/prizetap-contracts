@@ -94,6 +94,11 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
             tokenId
         );
 
+        require(
+            IERC721(collection).ownerOf(tokenId) == address(this),
+            "Not received the NFT"
+        );
+
         uint256 raffleId = ++lastRaffleId;
 
         Raffle storage raffle = raffles[raffleId];
