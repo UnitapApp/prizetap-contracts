@@ -170,14 +170,6 @@ abstract contract AbstractPrizetapRaffle is
         );
     }
 
-    function emergencyWithdraw(
-        uint256 amount,
-        address to
-    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(amount <= address(this).balance, "INSUFFICIENT_BALANCE");
-        payable(to).transfer(amount);
-    }
-
     function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
         _pause();
     }

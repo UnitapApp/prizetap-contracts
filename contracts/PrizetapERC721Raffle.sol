@@ -258,12 +258,4 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
     ) public pure override returns (bytes4) {
         return _ERC721_RECEIVED;
     }
-
-    function transferToken(
-        address to,
-        address collection,
-        uint256 tokenId
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        IERC721(collection).safeTransferFrom(address(this), to, tokenId);
-    }
 }
