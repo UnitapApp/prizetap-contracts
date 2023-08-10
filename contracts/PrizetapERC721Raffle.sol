@@ -113,24 +113,12 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         raffle.exists = true;
     }
 
-    function confirmRaffle(
-        uint256 raffleId
-    ) external override onlyOperatorOrAdmin {
-        require(raffles[raffleId].exists, "The raffle does not exist");
-        require(
-            raffles[raffleId].status == Status.PENDING,
-            "Raffle is not pending"
-        );
-        raffles[raffleId].status = Status.OPEN;
-    }
-
     function rejectRaffle(
         uint256 raffleId
-    ) external override onlyOperatorOrAdmin {
-        require(raffles[raffleId].exists, "The raffle does not exist");
+    ) external override onlyOperatorOrAdmin isOpenRaffle(raffleId) {
         require(
-            raffles[raffleId].status == Status.PENDING,
-            "Raffle is not pending"
+            raffles[raffleId].participantsCount == 0,
+            "Raffle's participants count > 0"
         );
         raffles[raffleId].status = Status.REJECTED;
     }
