@@ -214,7 +214,8 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
     function refundPrize(uint256 raffleId) external override whenNotPaused {
         require(raffles[raffleId].participants.length == 0, "participants > 0");
         require(
-            raffles[raffleId].status == Status.REJECTED,
+            raffles[raffleId].status == Status.REJECTED ||
+                raffles[raffleId].endTime < block.timestamp,
             "The raffle is not rejected"
         );
         require(
