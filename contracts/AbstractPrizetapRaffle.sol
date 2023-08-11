@@ -115,10 +115,7 @@ abstract contract AbstractPrizetapRaffle is
         uint256[] memory randomWords
     ) internal virtual;
 
-    function claimPrize(
-        uint256 raffleId,
-        bytes memory signature
-    ) external virtual;
+    function claimPrize(uint256 raffleId) external virtual;
 
     function refundPrize(uint256 raffleId) external virtual;
 

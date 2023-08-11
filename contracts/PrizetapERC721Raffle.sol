@@ -196,12 +196,8 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
     }
 
     function claimPrize(
-        uint256 raffleId,
-        bytes memory signature
+        uint256 raffleId
     ) external override whenNotPaused onlyWinner(raffleId) {
-        bytes memory encodedData = abi.encodePacked(msg.sender, raffleId);
-        _verifySignature(encodedData, signature);
-
         raffles[raffleId].status = Status.CLAIMED;
 
         IERC721(raffles[raffleId].collection).safeTransferFrom(

@@ -203,12 +203,8 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
     }
 
     function claimPrize(
-        uint256 raffleId,
-        bytes memory signature
+        uint256 raffleId
     ) external override whenNotPaused onlyWinner(raffleId) {
-        bytes memory encodedData = abi.encodePacked(msg.sender, raffleId);
-        _verifySignature(encodedData, signature);
-
         raffles[raffleId].status = Status.CLAIMED;
         address currency = raffles[raffleId].currency;
 
