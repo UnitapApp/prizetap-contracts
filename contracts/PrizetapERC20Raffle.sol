@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./AbstractPrizetapRaffle.sol";
 
 contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
+    using SafeERC20 for IERC20;
+
     struct Raffle {
         address initiator;
         uint256 prizeAmount;
@@ -89,8 +92,11 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
         if (currency == address(0)) {
             require(msg.value == amount, "!msg.value");
         } else {
-            IERC20 token = IERC20(currency);
-            token.transferFrom(msg.sender, address(this), amount);
+            IERC20(currency).safeTransferFrom(
+                msg.sender,
+                address(this),
+                amount
+            );
         }
 
         uint256 raffleId = ++lastRaffleId;
@@ -202,7 +208,7 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
         if (currency == address(0)) {
             payable(msg.sender).transfer(raffles[raffleId].prizeAmount);
         } else {
-            IERC20(currency).transfer(
+            IERC20(currency).safeTransfer(
                 msg.sender,
                 raffles[raffleId].prizeAmount
             );
@@ -228,7 +234,7 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
         if (currency == address(0)) {
             payable(msg.sender).transfer(raffles[raffleId].prizeAmount);
         } else {
-            IERC20(currency).transfer(
+            IERC20(currency).safeTransfer(
                 msg.sender,
                 raffles[raffleId].prizeAmount
             );
