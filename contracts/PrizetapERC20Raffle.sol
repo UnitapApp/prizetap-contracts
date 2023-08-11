@@ -92,11 +92,18 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
         if (currency == address(0)) {
             require(msg.value == amount, "!msg.value");
         } else {
+            uint256 balance = IERC20(currency).balanceOf(address(this));
+
             IERC20(currency).safeTransferFrom(
                 msg.sender,
                 address(this),
                 amount
             );
+
+            uint256 receivedAmount = IERC20(currency).balanceOf(address(this)) -
+                balance;
+
+            require(amount == receivedAmount, "receivedAmount != amount");
         }
 
         uint256 raffleId = ++lastRaffleId;
