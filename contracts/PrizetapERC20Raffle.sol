@@ -21,6 +21,7 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
         address winner; // Winner = address(0) means raffle is not held yet
         bool exists;
         Status status;
+        bytes32 requirementsHash;
     }
 
     mapping(uint256 => Raffle) public raffles;
@@ -78,7 +79,8 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
         uint256 maxParticipants,
         uint256 maxMultiplier,
         uint256 startTime,
-        uint256 endTime
+        uint256 endTime,
+        bytes32 requirementsHash
     ) external payable {
         require(amount > 0, "amount <= 0");
         require(maxParticipants > 0, "maxParticipants <= 0");
@@ -118,6 +120,7 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
         raffle.startTime = startTime;
         raffle.endTime = endTime;
         raffle.exists = true;
+        raffle.requirementsHash = requirementsHash;
     }
 
     function rejectRaffle(

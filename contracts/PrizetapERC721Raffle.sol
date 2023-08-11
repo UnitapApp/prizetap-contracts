@@ -19,6 +19,7 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         address winner; // Winner = address(0) means raffle is not held yet
         bool exists;
         Status status;
+        bytes32 requirementsHash;
     }
 
     bytes4 public constant _ERC721_RECEIVED = 0x150b7a02;
@@ -78,7 +79,8 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         uint256 maxParticipants,
         uint256 maxMultiplier,
         uint256 startTime,
-        uint256 endTime
+        uint256 endTime,
+        bytes32 requirementsHash
     ) external payable {
         require(maxParticipants > 0, "maxParticipants <= 0");
         require(maxMultiplier > 0, "maxMultiplier <= 0");
@@ -111,6 +113,7 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         raffle.startTime = startTime;
         raffle.endTime = endTime;
         raffle.exists = true;
+        raffle.requirementsHash = requirementsHash;
     }
 
     function rejectRaffle(
