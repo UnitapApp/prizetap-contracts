@@ -22,20 +22,6 @@ abstract contract AbstractPrizetapRaffle is
         REFUNDED
     }
 
-    event VRFRequestSent(uint256 requestId);
-    event VRFRequestFulfilled(uint256 requestId, uint256[] randomWords);
-    event Participate(
-        address indexed user,
-        uint256 raffleId,
-        uint256 multiplier
-    );
-    event RaffleCreated(address indexed initiator, uint256 raffleId);
-    event RaffleRejected(uint256 indexed raffleId, address indexed rejector);
-    event RaffleHeld(uint256 indexed raffleId, address indexed organizer);
-    event WinnerSpecified(uint256 indexed raffleId, address indexed winner);
-    event PrizeClaimed(uint256 indexed raffleId, address indexed winner);
-    event PrizeRefunded(uint256 indexed raffleId);
-
     bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
 
     mapping(uint256 => uint256) public vrfRequests; // Map vrfRequestId to raffleId
@@ -59,6 +45,20 @@ abstract contract AbstractPrizetapRaffle is
     uint32 callbackGasLimit = 100000;
 
     uint16 vrfRequestConfirmations = 3;
+
+    event VRFRequestSent(uint256 requestId);
+    event VRFRequestFulfilled(uint256 requestId, uint256[] randomWords);
+    event Participate(
+        address indexed user,
+        uint256 raffleId,
+        uint256 multiplier
+    );
+    event RaffleCreated(address indexed initiator, uint256 raffleId);
+    event RaffleRejected(uint256 indexed raffleId, address indexed rejector);
+    event RaffleHeld(uint256 indexed raffleId, address indexed organizer);
+    event WinnerSpecified(uint256 indexed raffleId, address indexed winner);
+    event PrizeClaimed(uint256 indexed raffleId, address indexed winner);
+    event PrizeRefunded(uint256 indexed raffleId);
 
     modifier onlyWinner(uint256 raffleId) virtual {
         _;
