@@ -85,7 +85,7 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         uint256 startTime,
         uint256 endTime,
         bytes32 requirementsHash
-    ) external payable {
+    ) external {
         require(maxParticipants > 0, "maxParticipants <= 0");
         require(maxMultiplier > 0, "maxMultiplier <= 0");
         require(
