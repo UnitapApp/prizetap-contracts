@@ -25,13 +25,12 @@ abstract contract AbstractPrizetapRaffle is
     bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
 
     mapping(uint256 => uint256) public vrfRequests; // Map vrfRequestId to raffleId
+
     mapping(address => mapping(uint32 => bool)) public usedNonces;
 
     uint256 public lastRaffleId = 0;
 
     uint256 public validationPeriod = 7 days;
-
-    VRFCoordinatorV2Interface private immutable CHAINLINK_VRF_COORDINATOR;
 
     uint64 chainlinkVrfSubscriptionId;
 
@@ -45,6 +44,8 @@ abstract contract AbstractPrizetapRaffle is
     uint32 callbackGasLimit = 100000;
 
     uint16 vrfRequestConfirmations = 3;
+
+    VRFCoordinatorV2Interface private immutable CHAINLINK_VRF_COORDINATOR;
 
     event VRFRequestSent(uint256 requestId);
     event VRFRequestFulfilled(uint256 requestId, uint256[] randomWords);
