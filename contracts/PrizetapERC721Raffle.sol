@@ -118,6 +118,8 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         raffle.endTime = endTime;
         raffle.exists = true;
         raffle.requirementsHash = requirementsHash;
+
+        emit RaffleCreated(msg.sender, raffleId);
     }
 
     function rejectRaffle(
@@ -128,6 +130,8 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
             "Raffle's participants count > 0"
         );
         raffles[raffleId].status = Status.REJECTED;
+
+        emit RaffleRejected(raffleId, msg.sender);
     }
 
     function participateInRaffle(
@@ -163,7 +167,7 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
             raffles[raffleId].participants.push(msg.sender);
         }
 
-        emit Participate(msg.sender, raffleId);
+        emit Participate(msg.sender, raffleId, multiplier);
     }
 
     function heldRaffle(
@@ -178,6 +182,8 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
     {
         raffles[raffleId].status = Status.CLOSED;
         requestRandomWords(raffleId);
+
+        emit RaffleHeld(raffleId, msg.sender);
     }
 
     function drawRaffle(
@@ -195,6 +201,8 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         raffles[raffleId].winner = raffles[raffleId].participants[
             indexOfWinner
         ];
+
+        emit WinnerSpecified(raffleId, raffles[raffleId].winner);
     }
 
     function claimPrize(
@@ -207,6 +215,8 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
             msg.sender,
             raffles[raffleId].tokenId
         );
+
+        emit PrizeClaimed(raffleId, msg.sender);
     }
 
     function refundPrize(uint256 raffleId) external override whenNotPaused {
@@ -228,6 +238,8 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
             msg.sender,
             raffles[raffleId].tokenId
         );
+
+        emit PrizeRefunded(raffleId);
     }
 
     function getParticipants(

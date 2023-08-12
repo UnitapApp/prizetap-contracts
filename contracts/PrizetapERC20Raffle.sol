@@ -125,6 +125,8 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
         raffle.endTime = endTime;
         raffle.exists = true;
         raffle.requirementsHash = requirementsHash;
+
+        emit RaffleCreated(msg.sender, raffleId);
     }
 
     function rejectRaffle(
@@ -135,6 +137,8 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
             "Raffle's participants count > 0"
         );
         raffles[raffleId].status = Status.REJECTED;
+
+        emit RaffleRejected(raffleId, msg.sender);
     }
 
     function participateInRaffle(
@@ -170,7 +174,7 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
             raffles[raffleId].participants.push(msg.sender);
         }
 
-        emit Participate(msg.sender, raffleId);
+        emit Participate(msg.sender, raffleId, multiplier);
     }
 
     function heldRaffle(
@@ -185,6 +189,8 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
     {
         raffles[raffleId].status = Status.CLOSED;
         requestRandomWords(raffleId);
+
+        emit RaffleHeld(raffleId, msg.sender);
     }
 
     function drawRaffle(
@@ -202,6 +208,8 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
         raffles[raffleId].winner = raffles[raffleId].participants[
             indexOfWinner
         ];
+
+        emit WinnerSpecified(raffleId, raffles[raffleId].winner);
     }
 
     function claimPrize(
@@ -218,6 +226,8 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
                 raffles[raffleId].prizeAmount
             );
         }
+
+        emit PrizeClaimed(raffleId, msg.sender);
     }
 
     function refundPrize(uint256 raffleId) external override whenNotPaused {
@@ -244,6 +254,8 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
                 raffles[raffleId].prizeAmount
             );
         }
+
+        emit PrizeRefunded(raffleId);
     }
 
     function getParticipants(
