@@ -61,6 +61,8 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         address _ChainlinkVRFCoordinator,
         uint64 _ChainlinkVRFSubscriptionId,
         bytes32 _ChainlinkKeyHash,
+        uint256 _muonAppId,
+        PublicKey memory _muonPublicKey,
         address admin,
         address operator
     )
@@ -68,6 +70,8 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
             _ChainlinkVRFCoordinator,
             _ChainlinkVRFSubscriptionId,
             _ChainlinkKeyHash,
+            _muonAppId,
+            _muonPublicKey,
             admin,
             operator
         )
@@ -129,8 +133,9 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
     function participateInRaffle(
         uint256 raffleId,
         uint32 nonce,
-        bytes memory signature,
-        uint256 multiplier
+        uint256 multiplier,
+        bytes calldata reqId,
+        SchnorrSign calldata signature
     ) external override whenNotPaused isOpenRaffle(raffleId) {
         require(
             raffles[raffleId].startTime < block.timestamp,
@@ -149,13 +154,7 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
             raffles[raffleId].maxMultiplier >= multiplier,
             "Invalid multiplier"
         );
-        bytes memory encodedData = abi.encodePacked(
-            msg.sender,
-            raffleId,
-            nonce,
-            multiplier
-        );
-        _verifySignature(encodedData, signature);
+        verifyTSS(raffleId, nonce, multiplier, reqId, signature);
         _verifyNonce(nonce);
 
         raffles[raffleId].participantsCount += 1;

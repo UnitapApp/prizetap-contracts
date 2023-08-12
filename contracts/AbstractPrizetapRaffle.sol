@@ -3,17 +3,16 @@ pragma solidity ^0.8.18;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
+import "./MuonClient.sol";
 
 abstract contract AbstractPrizetapRaffle is
     AccessControl,
     Pausable,
-    VRFConsumerBaseV2
+    VRFConsumerBaseV2,
+    MuonClient
 {
-    using ECDSA for bytes32;
-
     enum Status {
         OPEN,
         CLOSED,
@@ -68,9 +67,14 @@ abstract contract AbstractPrizetapRaffle is
         address _ChainlinkVRFCoordinator,
         uint64 _ChainlinkVRFSubscriptionId,
         bytes32 _ChainlinkKeyHash,
+        uint256 _muonAppId,
+        PublicKey memory _muonPublicKey,
         address admin,
         address operator
-    ) VRFConsumerBaseV2(_ChainlinkVRFCoordinator) {
+    )
+        VRFConsumerBaseV2(_ChainlinkVRFCoordinator)
+        MuonClient(_muonAppId, _muonPublicKey)
+    {
         _setupRole(DEFAULT_ADMIN_ROLE, admin);
         _setupRole(OPERATOR_ROLE, operator);
         CHAINLINK_VRF_COORDINATOR = VRFCoordinatorV2Interface(
@@ -104,8 +108,9 @@ abstract contract AbstractPrizetapRaffle is
     function participateInRaffle(
         uint256 raffleId,
         uint32 nonce,
-        bytes memory signature,
-        uint256 multiplier
+        uint256 multiplier,
+        bytes calldata reqId,
+        SchnorrSign calldata signature
     ) external virtual;
 
     function heldRaffle(uint256 raffleId) external virtual;
@@ -150,18 +155,25 @@ abstract contract AbstractPrizetapRaffle is
         usedNonces[msg.sender][nonce] = true;
     }
 
-    function _verifySignature(
-        bytes memory data,
-        bytes memory signature
-    ) internal view {
-        address signer = keccak256(data).toEthSignedMessageHash().recover(
-            signature
+    function verifyTSS(
+        uint256 raffleId,
+        uint32 nonce,
+        uint256 multiplier,
+        bytes calldata reqId,
+        SchnorrSign calldata sign
+    ) public {
+        bytes32 hash = keccak256(
+            abi.encodePacked(
+                muonAppId,
+                reqId,
+                msg.sender,
+                raffleId,
+                nonce,
+                multiplier
+            )
         );
-        require(
-            hasRole(OPERATOR_ROLE, signer) ||
-                hasRole(DEFAULT_ADMIN_ROLE, signer),
-            "Invalid signature"
-        );
+        bool verified = muonVerify(reqId, uint256(hash), sign, muonPublicKey);
+        require(verified, "Invalid signature!");
     }
 
     function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
