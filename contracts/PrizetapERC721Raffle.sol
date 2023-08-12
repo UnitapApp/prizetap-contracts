@@ -235,7 +235,7 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         address,
         uint256,
         bytes calldata
-    ) public pure override returns (bytes4) {
+    ) external pure override returns (bytes4) {
         return _ERC721_RECEIVED;
     }
 
