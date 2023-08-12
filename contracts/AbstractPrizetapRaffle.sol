@@ -193,6 +193,4 @@ abstract contract AbstractPrizetapRaffle is
     function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
         _unpause();
     }
-
-    receive() external payable {}
 }
