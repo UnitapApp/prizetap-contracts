@@ -136,7 +136,7 @@ abstract contract AbstractPrizetapRaffle is
 
     function getParticipants(
         uint256 raffleId
-    ) public view virtual returns (address[] memory);
+    ) external view virtual returns (address[] memory);
 
     function requestRandomWords(uint256 raffleId) internal {
         // Will revert if subscription is not set and funded.
