@@ -186,25 +186,6 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         emit RaffleHeld(raffleId, msg.sender);
     }
 
-    function drawRaffle(
-        uint256 raffleId,
-        uint256[] memory randomWords
-    ) internal override hasEnded(raffleId) {
-        require(
-            raffles[raffleId].status == Status.CLOSED,
-            "The raffle is not closed"
-        );
-        uint256 indexOfWinner = randomWords[0] %
-            raffles[raffleId].participants.length;
-
-        raffles[raffleId].status = Status.HELD;
-        raffles[raffleId].winner = raffles[raffleId].participants[
-            indexOfWinner
-        ];
-
-        emit WinnerSpecified(raffleId, raffles[raffleId].winner);
-    }
-
     function claimPrize(
         uint256 raffleId
     ) external override whenNotPaused onlyWinner(raffleId) {
@@ -256,5 +237,24 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         bytes calldata
     ) public pure override returns (bytes4) {
         return _ERC721_RECEIVED;
+    }
+
+    function drawRaffle(
+        uint256 raffleId,
+        uint256[] memory randomWords
+    ) internal override hasEnded(raffleId) {
+        require(
+            raffles[raffleId].status == Status.CLOSED,
+            "The raffle is not closed"
+        );
+        uint256 indexOfWinner = randomWords[0] %
+            raffles[raffleId].participants.length;
+
+        raffles[raffleId].status = Status.HELD;
+        raffles[raffleId].winner = raffles[raffleId].participants[
+            indexOfWinner
+        ];
+
+        emit WinnerSpecified(raffleId, raffles[raffleId].winner);
     }
 }

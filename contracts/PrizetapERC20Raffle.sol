@@ -193,25 +193,6 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
         emit RaffleHeld(raffleId, msg.sender);
     }
 
-    function drawRaffle(
-        uint256 raffleId,
-        uint256[] memory randomWords
-    ) internal override hasEnded(raffleId) {
-        require(
-            raffles[raffleId].status == Status.CLOSED,
-            "The raffle is not closed"
-        );
-        uint256 indexOfWinner = randomWords[0] %
-            raffles[raffleId].participants.length;
-
-        raffles[raffleId].status = Status.HELD;
-        raffles[raffleId].winner = raffles[raffleId].participants[
-            indexOfWinner
-        ];
-
-        emit WinnerSpecified(raffleId, raffles[raffleId].winner);
-    }
-
     function claimPrize(
         uint256 raffleId
     ) external override whenNotPaused onlyWinner(raffleId) {
@@ -263,5 +244,24 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
     ) external view override returns (address[] memory) {
         Raffle memory raffle = raffles[raffleId];
         return raffle.participants;
+    }
+
+    function drawRaffle(
+        uint256 raffleId,
+        uint256[] memory randomWords
+    ) internal override hasEnded(raffleId) {
+        require(
+            raffles[raffleId].status == Status.CLOSED,
+            "The raffle is not closed"
+        );
+        uint256 indexOfWinner = randomWords[0] %
+            raffles[raffleId].participants.length;
+
+        raffles[raffleId].status = Status.HELD;
+        raffles[raffleId].winner = raffles[raffleId].participants[
+            indexOfWinner
+        ];
+
+        emit WinnerSpecified(raffleId, raffles[raffleId].winner);
     }
 }

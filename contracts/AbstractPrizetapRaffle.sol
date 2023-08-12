@@ -126,18 +126,47 @@ abstract contract AbstractPrizetapRaffle is
 
     function heldRaffle(uint256 raffleId) external virtual;
 
-    function drawRaffle(
-        uint256 raffleId,
-        uint256[] memory randomWords
-    ) internal virtual;
-
     function claimPrize(uint256 raffleId) external virtual;
 
     function refundPrize(uint256 raffleId) external virtual;
 
+    function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _pause();
+    }
+
+    function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _unpause();
+    }
+
     function getParticipants(
         uint256 raffleId
     ) external view virtual returns (address[] memory);
+
+    function verifyTSS(
+        uint256 raffleId,
+        uint32 nonce,
+        uint256 multiplier,
+        bytes calldata reqId,
+        SchnorrSign calldata sign
+    ) public {
+        bytes32 hash = keccak256(
+            abi.encodePacked(
+                muonAppId,
+                reqId,
+                msg.sender,
+                raffleId,
+                nonce,
+                multiplier
+            )
+        );
+        bool verified = muonVerify(reqId, uint256(hash), sign, muonPublicKey);
+        require(verified, "Invalid signature!");
+    }
+
+    function drawRaffle(
+        uint256 raffleId,
+        uint256[] memory randomWords
+    ) internal virtual;
 
     function requestRandomWords(uint256 raffleId) internal {
         // Will revert if subscription is not set and funded.
@@ -164,34 +193,5 @@ abstract contract AbstractPrizetapRaffle is
     function _verifyNonce(uint32 nonce) internal {
         require(!usedNonces[msg.sender][nonce], "Signature is already used");
         usedNonces[msg.sender][nonce] = true;
-    }
-
-    function verifyTSS(
-        uint256 raffleId,
-        uint32 nonce,
-        uint256 multiplier,
-        bytes calldata reqId,
-        SchnorrSign calldata sign
-    ) public {
-        bytes32 hash = keccak256(
-            abi.encodePacked(
-                muonAppId,
-                reqId,
-                msg.sender,
-                raffleId,
-                nonce,
-                multiplier
-            )
-        );
-        bool verified = muonVerify(reqId, uint256(hash), sign, muonPublicKey);
-        require(verified, "Invalid signature!");
-    }
-
-    function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _pause();
-    }
-
-    function unpause() external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _unpause();
     }
 }
