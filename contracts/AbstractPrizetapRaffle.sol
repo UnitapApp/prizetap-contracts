@@ -26,7 +26,9 @@ abstract contract AbstractPrizetapRaffle is
 
     mapping(uint256 => uint256) public vrfRequests; // Map vrfRequestId to raffleId
 
-    mapping(address => mapping(uint32 => bool)) public usedNonces;
+    // Check if the wallet has already participated in the raffle
+    // wallet => (raffleId => bool)
+    mapping(address => mapping(uint256 => bool)) public isParticipated;
 
     uint256 public lastRaffleId = 0;
 
@@ -190,8 +192,8 @@ abstract contract AbstractPrizetapRaffle is
         emit VRFRequestFulfilled(_requestId, _randomWords);
     }
 
-    function _verifyNonce(uint32 nonce) internal {
-        require(!usedNonces[msg.sender][nonce], "Signature is already used");
-        usedNonces[msg.sender][nonce] = true;
+    function _checkParticipated(address wallet, uint256 raffleId) internal {
+        require(!isParticipated[wallet][raffleId], "Already participated");
+        isParticipated[wallet][raffleId] = true;
     }
 }

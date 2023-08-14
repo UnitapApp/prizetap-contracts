@@ -158,8 +158,8 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
             raffles[raffleId].maxMultiplier >= multiplier,
             "Invalid multiplier"
         );
+        _checkParticipated(msg.sender, raffleId);
         verifyTSS(raffleId, nonce, multiplier, reqId, signature);
-        _verifyNonce(nonce);
 
         raffles[raffleId].participantsCount += 1;
 
