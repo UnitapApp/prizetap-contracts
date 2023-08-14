@@ -1,7 +1,7 @@
 {
-  "name": "unitap-fund-contract",
+  "name": "prizetap-contracts",
   "version": "1.0.0",
-  "description": "Unitap fund contract",
+  "description": "Prizetap contracts",
   "scripts": {
     "deploy": "./deploy.sh"
   },
