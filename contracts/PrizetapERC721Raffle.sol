@@ -139,7 +139,13 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         uint256 multiplier,
         bytes calldata reqId,
         SchnorrSign calldata signature
-    ) external override whenNotPaused isOpenRaffle(raffleId) {
+    )
+        external
+        override
+        whenNotPaused
+        isOpenRaffle(raffleId)
+        checkParticipated(raffleId)
+    {
         require(
             raffles[raffleId].startTime < block.timestamp,
             "Raffle is not started"
@@ -157,7 +163,7 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
             raffles[raffleId].maxMultiplier >= multiplier,
             "Invalid multiplier"
         );
-        _checkParticipated(msg.sender, raffleId);
+
         verifyTSS(raffleId, multiplier, reqId, signature);
 
         raffles[raffleId].participantsCount += 1;

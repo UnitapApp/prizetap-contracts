@@ -76,6 +76,12 @@ abstract contract AbstractPrizetapRaffle is
         _;
     }
 
+    modifier checkParticipated(uint256 raffleId) {
+        require(!isParticipated[msg.sender][raffleId], "Already participated");
+        isParticipated[msg.sender][raffleId] = true;
+        _;
+    }
+
     constructor(
         address _ChainlinkVRFCoordinator,
         uint64 _ChainlinkVRFSubscriptionId,
@@ -181,10 +187,5 @@ abstract contract AbstractPrizetapRaffle is
         require(vrfRequests[_requestId] != 0, "VRF: Request not found");
         drawRaffle(vrfRequests[_requestId], _randomWords);
         emit VRFRequestFulfilled(_requestId, _randomWords);
-    }
-
-    function _checkParticipated(address wallet, uint256 raffleId) internal {
-        require(!isParticipated[wallet][raffleId], "Already participated");
-        isParticipated[wallet][raffleId] = true;
     }
 }
