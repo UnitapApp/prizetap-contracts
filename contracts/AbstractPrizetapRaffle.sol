@@ -120,7 +120,6 @@ abstract contract AbstractPrizetapRaffle is
 
     function participateInRaffle(
         uint256 raffleId,
-        uint32 nonce,
         uint256 multiplier,
         bytes calldata reqId,
         SchnorrSign calldata signature
@@ -146,20 +145,12 @@ abstract contract AbstractPrizetapRaffle is
 
     function verifyTSS(
         uint256 raffleId,
-        uint32 nonce,
         uint256 multiplier,
         bytes calldata reqId,
         SchnorrSign calldata sign
     ) public {
         bytes32 hash = keccak256(
-            abi.encodePacked(
-                muonAppId,
-                reqId,
-                msg.sender,
-                raffleId,
-                nonce,
-                multiplier
-            )
+            abi.encodePacked(muonAppId, reqId, msg.sender, raffleId, multiplier)
         );
         bool verified = muonVerify(reqId, uint256(hash), sign, muonPublicKey);
         require(verified, "Invalid signature!");

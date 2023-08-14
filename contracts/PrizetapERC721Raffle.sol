@@ -136,7 +136,6 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
 
     function participateInRaffle(
         uint256 raffleId,
-        uint32 nonce,
         uint256 multiplier,
         bytes calldata reqId,
         SchnorrSign calldata signature
@@ -159,7 +158,7 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
             "Invalid multiplier"
         );
         _checkParticipated(msg.sender, raffleId);
-        verifyTSS(raffleId, nonce, multiplier, reqId, signature);
+        verifyTSS(raffleId, multiplier, reqId, signature);
 
         raffles[raffleId].participantsCount += 1;
 
