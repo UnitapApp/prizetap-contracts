@@ -156,7 +156,14 @@ abstract contract AbstractPrizetapRaffle is
         SchnorrSign calldata sign
     ) public {
         bytes32 hash = keccak256(
-            abi.encodePacked(muonAppId, reqId, msg.sender, raffleId, multiplier)
+            abi.encodePacked(
+                muonAppId,
+                reqId,
+                block.chainid,
+                msg.sender,
+                raffleId,
+                multiplier
+            )
         );
         bool verified = muonVerify(reqId, uint256(hash), sign, muonPublicKey);
         require(verified, "Invalid signature!");
