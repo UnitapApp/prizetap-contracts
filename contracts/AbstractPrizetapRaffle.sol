@@ -41,6 +41,9 @@ abstract contract AbstractPrizetapRaffle is
 
     uint64 chainlinkVrfSubscriptionId;
 
+    // The gas lane to use, which specifies the maximum gas price to bump to.
+    // For a list of available gas lanes on each network,
+    // see https://docs.chain.link/docs/vrf/v2/subscription/supported-networks/#configurations
     bytes32 chainlinkKeyHash;
 
     // Depends on the number of requested values that you want sent to the
@@ -114,6 +117,18 @@ abstract contract AbstractPrizetapRaffle is
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(periodSeconds > 0, "Invalid period");
         validationPeriod = periodSeconds;
+    }
+
+    function setVrfSubscriptionId(
+        uint64 id
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        chainlinkVrfSubscriptionId = id;
+    }
+
+    function setVrfKeyHash(
+        bytes32 keyHash
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        chainlinkKeyHash = keyHash;
     }
 
     function setCallbackGasLimit(
