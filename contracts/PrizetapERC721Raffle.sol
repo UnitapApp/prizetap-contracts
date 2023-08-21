@@ -62,7 +62,8 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         uint64 _ChainlinkVRFSubscriptionId,
         bytes32 _ChainlinkKeyHash,
         uint256 _muonAppId,
-        PublicKey memory _muonPublicKey,
+        IMuonClient.PublicKey memory _muonPublicKey,
+        address _muon,
         address admin,
         address operator
     )
@@ -72,6 +73,7 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
             _ChainlinkKeyHash,
             _muonAppId,
             _muonPublicKey,
+            _muon,
             admin,
             operator
         )
@@ -138,7 +140,7 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         uint256 raffleId,
         uint256 multiplier,
         bytes calldata reqId,
-        SchnorrSign calldata signature
+        IMuonClient.SchnorrSign calldata signature
     )
         external
         override

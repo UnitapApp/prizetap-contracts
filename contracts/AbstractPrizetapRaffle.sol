@@ -5,13 +5,12 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
-import "./MuonClient.sol";
+import "./IMuonClient.sol";
 
 abstract contract AbstractPrizetapRaffle is
     AccessControl,
     Pausable,
-    VRFConsumerBaseV2,
-    MuonClient
+    VRFConsumerBaseV2
 {
     enum Status {
         OPEN,
@@ -33,6 +32,12 @@ abstract contract AbstractPrizetapRaffle is
     uint256 public lastRaffleId = 0;
 
     uint256 public validationPeriod = 7 days;
+
+    uint256 public muonAppId;
+
+    IMuonClient.PublicKey public muonPublicKey;
+
+    IMuonClient public muon;
 
     uint64 chainlinkVrfSubscriptionId;
 
@@ -87,13 +92,11 @@ abstract contract AbstractPrizetapRaffle is
         uint64 _ChainlinkVRFSubscriptionId,
         bytes32 _ChainlinkKeyHash,
         uint256 _muonAppId,
-        PublicKey memory _muonPublicKey,
+        IMuonClient.PublicKey memory _muonPublicKey,
+        address _muon,
         address admin,
         address operator
-    )
-        VRFConsumerBaseV2(_ChainlinkVRFCoordinator)
-        MuonClient(_muonAppId, _muonPublicKey)
-    {
+    ) VRFConsumerBaseV2(_ChainlinkVRFCoordinator) {
         _setupRole(DEFAULT_ADMIN_ROLE, admin);
         _setupRole(OPERATOR_ROLE, operator);
         CHAINLINK_VRF_COORDINATOR = VRFCoordinatorV2Interface(
@@ -101,6 +104,9 @@ abstract contract AbstractPrizetapRaffle is
         );
         chainlinkVrfSubscriptionId = _ChainlinkVRFSubscriptionId;
         chainlinkKeyHash = _ChainlinkKeyHash;
+        muonAppId = _muonAppId;
+        muonPublicKey = _muonPublicKey;
+        muon = IMuonClient(_muon);
     }
 
     function setValidationPeriod(
@@ -122,13 +128,31 @@ abstract contract AbstractPrizetapRaffle is
         vrfRequestConfirmations = count;
     }
 
+    function setMuonAppId(
+        uint256 _muonAppId
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        muonAppId = _muonAppId;
+    }
+
+    function setMuonPublicKey(
+        IMuonClient.PublicKey memory _muonPublicKey
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        muonPublicKey = _muonPublicKey;
+    }
+
+    function setMuonAddress(
+        address _muonAddress
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        muon = IMuonClient(_muonAddress);
+    }
+
     function rejectRaffle(uint256 raffleId) external virtual;
 
     function participateInRaffle(
         uint256 raffleId,
         uint256 multiplier,
         bytes calldata reqId,
-        SchnorrSign calldata signature
+        IMuonClient.SchnorrSign calldata signature
     ) external virtual;
 
     function heldRaffle(uint256 raffleId) external virtual;
@@ -153,7 +177,7 @@ abstract contract AbstractPrizetapRaffle is
         uint256 raffleId,
         uint256 multiplier,
         bytes calldata reqId,
-        SchnorrSign calldata sign
+        IMuonClient.SchnorrSign calldata sign
     ) public {
         bytes32 hash = keccak256(
             abi.encodePacked(
@@ -165,7 +189,12 @@ abstract contract AbstractPrizetapRaffle is
                 multiplier
             )
         );
-        bool verified = muonVerify(reqId, uint256(hash), sign, muonPublicKey);
+        bool verified = muon.muonVerify(
+            reqId,
+            uint256(hash),
+            sign,
+            muonPublicKey
+        );
         require(verified, "Invalid signature!");
     }
 
