@@ -58,24 +58,24 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
     }
 
     constructor(
-        address _ChainlinkVRFCoordinator,
-        uint64 _ChainlinkVRFSubscriptionId,
-        bytes32 _ChainlinkKeyHash,
+        address _chainlinkVRFCoordinator,
+        uint64 _chainlinkVRFSubscriptionId,
+        bytes32 _chainlinkKeyHash,
         uint256 _muonAppId,
         IMuonClient.PublicKey memory _muonPublicKey,
         address _muon,
-        address admin,
-        address operator
+        address _admin,
+        address _operator
     )
         AbstractPrizetapRaffle(
-            _ChainlinkVRFCoordinator,
-            _ChainlinkVRFSubscriptionId,
-            _ChainlinkKeyHash,
+            _chainlinkVRFCoordinator,
+            _chainlinkVRFSubscriptionId,
+            _chainlinkKeyHash,
             _muonAppId,
             _muonPublicKey,
             _muon,
-            admin,
-            operator
+            _admin,
+            _operator
         )
     {}
 

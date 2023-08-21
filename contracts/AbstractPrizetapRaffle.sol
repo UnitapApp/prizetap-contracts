@@ -88,22 +88,22 @@ abstract contract AbstractPrizetapRaffle is
     }
 
     constructor(
-        address _ChainlinkVRFCoordinator,
-        uint64 _ChainlinkVRFSubscriptionId,
-        bytes32 _ChainlinkKeyHash,
+        address _chainlinkVRFCoordinator,
+        uint64 _chainlinkVRFSubscriptionId,
+        bytes32 _chainlinkKeyHash,
         uint256 _muonAppId,
         IMuonClient.PublicKey memory _muonPublicKey,
         address _muon,
-        address admin,
-        address operator
-    ) VRFConsumerBaseV2(_ChainlinkVRFCoordinator) {
-        _setupRole(DEFAULT_ADMIN_ROLE, admin);
-        _setupRole(OPERATOR_ROLE, operator);
+        address _admin,
+        address _operator
+    ) VRFConsumerBaseV2(_chainlinkVRFCoordinator) {
+        _setupRole(DEFAULT_ADMIN_ROLE, _admin);
+        _setupRole(OPERATOR_ROLE, _operator);
         CHAINLINK_VRF_COORDINATOR = VRFCoordinatorV2Interface(
-            _ChainlinkVRFCoordinator
+            _chainlinkVRFCoordinator
         );
-        chainlinkVrfSubscriptionId = _ChainlinkVRFSubscriptionId;
-        chainlinkKeyHash = _ChainlinkKeyHash;
+        chainlinkVrfSubscriptionId = _chainlinkVRFSubscriptionId;
+        chainlinkKeyHash = _chainlinkKeyHash;
         muonAppId = _muonAppId;
         muonPublicKey = _muonPublicKey;
         muon = IMuonClient(_muon);
