@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity  ^0.8.18;
+
+pragma solidity  >=0.7.0 <0.9.0;
 
 contract SchnorrSECP256K1Verifier {
   // See https://en.bitcoin.it/wiki/Secp256k1 for this constant.
