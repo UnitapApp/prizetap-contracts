@@ -223,7 +223,7 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
         require(
             raffles[raffleId].status == Status.REJECTED ||
                 raffles[raffleId].endTime < block.timestamp,
-            "The raffle is not rejected"
+            "The raffle is not rejected or expired"
         );
         require(
             msg.sender == raffles[raffleId].initiator,
