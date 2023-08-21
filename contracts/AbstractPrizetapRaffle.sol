@@ -199,6 +199,7 @@ abstract contract AbstractPrizetapRaffle is
                 muonAppId,
                 reqId,
                 block.chainid,
+                address(this),
                 msg.sender,
                 raffleId,
                 multiplier
