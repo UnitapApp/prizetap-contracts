@@ -55,11 +55,12 @@ task("account", "returns nonce and balance for specified address on multiple net
 
 task("verify-cli", "verify contract on the specified network")
   .addParam("address")
+  .addParam("name")
   .setAction(async taskArgs => {
     
     const verify = require("./scripts/verify");
 
-    await verify(taskArgs.address);
+    await verify(taskArgs.address, `contracts/${taskArgs.name}.sol:${taskArgs.name}`);
 
   });
 

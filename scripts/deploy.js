@@ -4,37 +4,47 @@
 // You can also run a script with `npx hardhat run <script>`. If you do that, Hardhat
 // will compile your contracts, add the Hardhat Runtime Environment's members to the
 // global scope, and execute the script.
-const hre = require("hardhat");
-const args = require("./args");
-const verify = require("./verify");
 const contractName = process.env.name
+const { bytecode } = require(`../artifacts/contracts/${contractName}.sol/${contractName}.json`);
+const { encoder, create2Address } = require("./utils.js")
+const { args_abi, args_values } = require("./args");
+const { UNITAP_DEPLOY_FACTORY_ABI } = require("./abi.js");
+const verify = require("./verify");
+const { ethers } = require("hardhat");
 
 function sleep(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
-async function main() {
+const main = async () => {
+  const factoryAddr = process.env.FACTORY_ADDR;
+  const saltHex = ethers.utils.id(`${process.env.salt}`);
+  const initCode = bytecode + encoder(args_abi, args_values);
 
-  const factory = await hre.ethers.getContractFactory(contractName);
+  const create2Addr = create2Address(factoryAddr, saltHex, initCode);
+  console.log("Precomputed address:", create2Addr);
 
-  const prizetapRaffle = await factory.deploy(...args);
+  const factory = await ethers.getContractAt(UNITAP_DEPLOY_FACTORY_ABI, factoryAddr)
 
-  await prizetapRaffle.deployed();
+  const contractDeployment = await factory.deploy(initCode, saltHex, process.env.salt);
+  const txReceipt = await contractDeployment.wait();
 
-  console.log(
-    `${contractName} deployed to ${prizetapRaffle.address}`
-  );
+  // const contractAddress = txReceipt.events[0].args[0];
+  console.log(txReceipt.events);
+  if(txReceipt.events?.length) {
+    const contractAddress = create2Addr;
 
-  await sleep(10000);
+    console.log("Deployed to:", contractAddress);
 
-  await verify(prizetapRaffle.address);
+    await sleep(10000);
 
-  console.log(`${contractName} verified successfully`)
-}
+    await verify(contractAddress, `contracts/${contractName}.sol:${contractName}`);
+  }
+};
 
-// We recommend this pattern to be able to use async/await everywhere
-// and properly handle errors.
-main().catch((error) => {
+main()
+.then(() => process.exit(0))
+.catch((error) => {
   console.error(error);
-  process.exitCode = 1;
+  process.exit(1);
 });
