@@ -64,6 +64,7 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         uint256 _muonAppId,
         IMuonClient.PublicKey memory _muonPublicKey,
         address _muon,
+        address _muonValidGateway,
         address _admin,
         address _operator
     )
@@ -74,6 +75,7 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
             _muonAppId,
             _muonPublicKey,
             _muon,
+            _muonValidGateway,
             _admin,
             _operator
         )
@@ -140,7 +142,8 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         uint256 raffleId,
         uint256 multiplier,
         bytes calldata reqId,
-        IMuonClient.SchnorrSign calldata signature
+        IMuonClient.SchnorrSign calldata signature,
+        bytes calldata gatewaySignature
     )
         external
         override
@@ -166,7 +169,13 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
             "Invalid multiplier"
         );
 
-        verifyTSS(raffleId, multiplier, reqId, signature);
+        verifyTSSAndGateway(
+            raffleId,
+            multiplier,
+            reqId,
+            signature,
+            gatewaySignature
+        );
 
         raffles[raffleId].participantsCount += 1;
 

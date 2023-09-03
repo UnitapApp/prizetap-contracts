@@ -3,6 +3,7 @@ pragma solidity ^0.8.18;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import "./IMuonClient.sol";
@@ -12,6 +13,8 @@ abstract contract AbstractPrizetapRaffle is
     Pausable,
     VRFConsumerBaseV2
 {
+    using ECDSA for bytes32;
+
     enum Status {
         OPEN,
         CLOSED,
@@ -38,6 +41,8 @@ abstract contract AbstractPrizetapRaffle is
     IMuonClient.PublicKey public muonPublicKey;
 
     IMuonClient public muon;
+
+    address public muonValidGateway;
 
     uint64 chainlinkVrfSubscriptionId;
 
@@ -97,6 +102,7 @@ abstract contract AbstractPrizetapRaffle is
         uint256 _muonAppId,
         IMuonClient.PublicKey memory _muonPublicKey,
         address _muon,
+        address _muonValidGateway,
         address _admin,
         address _operator
     ) VRFConsumerBaseV2(_chainlinkVRFCoordinator) {
@@ -110,6 +116,7 @@ abstract contract AbstractPrizetapRaffle is
         muonAppId = _muonAppId;
         muonPublicKey = _muonPublicKey;
         muon = IMuonClient(_muon);
+        muonValidGateway = _muonValidGateway;
     }
 
     function setValidationPeriod(
@@ -161,13 +168,20 @@ abstract contract AbstractPrizetapRaffle is
         muon = IMuonClient(_muonAddress);
     }
 
+    function setMuonGateway(
+        address _gatewayAddress
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        muonValidGateway = _gatewayAddress;
+    }
+
     function rejectRaffle(uint256 raffleId) external virtual;
 
     function participateInRaffle(
         uint256 raffleId,
         uint256 multiplier,
         bytes calldata reqId,
-        IMuonClient.SchnorrSign calldata signature
+        IMuonClient.SchnorrSign calldata signature,
+        bytes calldata gatewaySignature
     ) external virtual;
 
     function heldRaffle(uint256 raffleId) external virtual;
@@ -188,11 +202,12 @@ abstract contract AbstractPrizetapRaffle is
         uint256 raffleId
     ) external view virtual returns (address[] memory);
 
-    function verifyTSS(
+    function verifyTSSAndGateway(
         uint256 raffleId,
         uint256 multiplier,
         bytes calldata reqId,
-        IMuonClient.SchnorrSign calldata sign
+        IMuonClient.SchnorrSign calldata sign,
+        bytes calldata gatewaySignature
     ) public {
         bytes32 hash = keccak256(
             abi.encodePacked(
@@ -212,6 +227,14 @@ abstract contract AbstractPrizetapRaffle is
             muonPublicKey
         );
         require(verified, "Invalid signature!");
+
+        hash = hash.toEthSignedMessageHash();
+        address gatewaySignatureSigner = hash.recover(gatewaySignature);
+
+        require(
+            gatewaySignatureSigner == muonValidGateway,
+            "Gateway is not valid"
+        );
     }
 
     function drawRaffle(

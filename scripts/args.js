@@ -5,6 +5,7 @@ const args_abi = [
   "uint256", // Muon appId
   "tuple(uint256 x, uint8 parity) d", // Muon publicKey
   "address", // Muon address
+  "address", // Muon gateway
   "address", // Admin
   "address" // Operator
 ]
@@ -19,6 +20,7 @@ const args_values = [
     parity: 1,
   },
   "0x47206B40a0cfab6D8663D887A20c9398beB35f64",
+  "0x4d7A51Caa1E79ee080A7a045B61f424Da8965A3c",
   "0xb57490CDAABEDb450df33EfCdd93079A24ac5Ce5",
   "0xB10f8E218A9cD738b0F1E2f7169Aa3c0897F2d83"
 ]
