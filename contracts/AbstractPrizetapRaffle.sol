@@ -4,33 +4,32 @@ pragma solidity ^0.8.18;
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
-import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import "./IMuonClient.sol";
 
-abstract contract AbstractPrizetapRaffle is
-    AccessControl,
-    Pausable,
-    VRFConsumerBaseV2
-{
+abstract contract AbstractPrizetapRaffle is AccessControl, Pausable {
     using ECDSA for bytes32;
 
     enum Status {
         OPEN,
         CLOSED,
-        HELD,
-        CLAIMED,
         REJECTED,
         REFUNDED
     }
 
     bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
 
-    mapping(uint256 => uint256) public vrfRequests; // Map vrfRequestId to raffleId
+    uint32 public constant MAX_NUM_WINNERS = 500;
 
     // Check if the wallet has already participated in the raffle
     // wallet => (raffleId => bool)
     mapping(address => mapping(uint256 => bool)) public isParticipated;
+    // raffleId => ( winner => isWinner )
+    mapping(uint256 => mapping(address => bool)) public isWinner;
+    // raffleId => ( winner => claimed )
+    mapping(uint256 => mapping(address => bool)) public isWinnerClaimed;
+    // raffleId => ( participant => positions[] )
+    mapping(uint256 => mapping(address => uint256[]))
+        public participantPositions;
 
     uint256 public lastRaffleId = 0;
 
@@ -44,26 +43,6 @@ abstract contract AbstractPrizetapRaffle is
 
     address public muonValidGateway;
 
-    uint64 chainlinkVrfSubscriptionId;
-
-    // The gas lane to use, which specifies the maximum gas price to bump to.
-    // For a list of available gas lanes on each network,
-    // see https://docs.chain.link/docs/vrf/v2/subscription/supported-networks/#configurations
-    bytes32 chainlinkKeyHash;
-
-    // Depends on the number of requested values that you want sent to the
-    // fulfillRandomWords() function. Test and adjust
-    // this limit based on the network that you select, the size of the request,
-    // and the processing of the callback request in the fulfillRandomWords()
-    // function.
-    uint32 callbackGasLimit = 100000;
-
-    uint16 vrfRequestConfirmations = 3;
-
-    VRFCoordinatorV2Interface private immutable CHAINLINK_VRF_COORDINATOR;
-
-    event VRFRequestSent(uint256 requestId);
-    event VRFRequestFulfilled(uint256 requestId, uint256[] randomWords);
     event Participate(
         address indexed user,
         uint256 raffleId,
@@ -71,8 +50,7 @@ abstract contract AbstractPrizetapRaffle is
     );
     event RaffleCreated(address indexed initiator, uint256 raffleId);
     event RaffleRejected(uint256 indexed raffleId, address indexed rejector);
-    event RaffleHeld(uint256 indexed raffleId, address indexed organizer);
-    event WinnerSpecified(uint256 indexed raffleId, address indexed winner);
+    event WinnersSpecified(uint256 indexed raffleId, address[] indexed winner);
     event PrizeClaimed(uint256 indexed raffleId, address indexed winner);
     event PrizeRefunded(uint256 indexed raffleId);
 
@@ -96,23 +74,15 @@ abstract contract AbstractPrizetapRaffle is
     }
 
     constructor(
-        address _chainlinkVRFCoordinator,
-        uint64 _chainlinkVRFSubscriptionId,
-        bytes32 _chainlinkKeyHash,
         uint256 _muonAppId,
         IMuonClient.PublicKey memory _muonPublicKey,
         address _muon,
         address _muonValidGateway,
         address _admin,
         address _operator
-    ) VRFConsumerBaseV2(_chainlinkVRFCoordinator) {
+    ) {
         _setupRole(DEFAULT_ADMIN_ROLE, _admin);
         _setupRole(OPERATOR_ROLE, _operator);
-        CHAINLINK_VRF_COORDINATOR = VRFCoordinatorV2Interface(
-            _chainlinkVRFCoordinator
-        );
-        chainlinkVrfSubscriptionId = _chainlinkVRFSubscriptionId;
-        chainlinkKeyHash = _chainlinkKeyHash;
         muonAppId = _muonAppId;
         muonPublicKey = _muonPublicKey;
         muon = IMuonClient(_muon);
@@ -122,32 +92,7 @@ abstract contract AbstractPrizetapRaffle is
     function setValidationPeriod(
         uint256 periodSeconds
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(periodSeconds > 0, "Invalid period");
         validationPeriod = periodSeconds;
-    }
-
-    function setVrfSubscriptionId(
-        uint64 id
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        chainlinkVrfSubscriptionId = id;
-    }
-
-    function setVrfKeyHash(
-        bytes32 keyHash
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        chainlinkKeyHash = keyHash;
-    }
-
-    function setCallbackGasLimit(
-        uint32 gaslimit
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        callbackGasLimit = gaslimit;
-    }
-
-    function setVrfRequestConfirmations(
-        uint16 count
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        vrfRequestConfirmations = count;
     }
 
     function setMuonAppId(
@@ -184,8 +129,6 @@ abstract contract AbstractPrizetapRaffle is
         bytes calldata gatewaySignature
     ) external virtual;
 
-    function heldRaffle(uint256 raffleId) external virtual;
-
     function claimPrize(uint256 raffleId) external virtual;
 
     function refundPrize(uint256 raffleId) external virtual;
@@ -202,7 +145,16 @@ abstract contract AbstractPrizetapRaffle is
         uint256 raffleId
     ) external view virtual returns (address[] memory);
 
-    function verifyTSSAndGateway(
+    function drawRaffle(
+        uint256 raffleId,
+        uint256 expirationTime,
+        uint256[] calldata randomWords,
+        bytes calldata reqId,
+        IMuonClient.SchnorrSign calldata signature,
+        bytes calldata gatewaySignature
+    ) external virtual;
+
+    function verifyParticipationSig(
         uint256 raffleId,
         uint256 multiplier,
         bytes calldata reqId,
@@ -220,6 +172,28 @@ abstract contract AbstractPrizetapRaffle is
                 multiplier
             )
         );
+        verifyMuonSig(reqId, hash, sign, gatewaySignature);
+    }
+
+    function verifyRandomNumberSig(
+        uint256 expirationTime,
+        uint256[] calldata randomNumbers,
+        bytes calldata reqId,
+        IMuonClient.SchnorrSign calldata sign,
+        bytes calldata gatewaySignature
+    ) public {
+        bytes32 hash = keccak256(
+            abi.encodePacked(muonAppId, reqId, expirationTime, randomNumbers)
+        );
+        verifyMuonSig(reqId, hash, sign, gatewaySignature);
+    }
+
+    function verifyMuonSig(
+        bytes calldata reqId,
+        bytes32 hash,
+        IMuonClient.SchnorrSign calldata sign,
+        bytes calldata gatewaySignature
+    ) internal {
         bool verified = muon.muonVerify(
             reqId,
             uint256(hash),
@@ -237,30 +211,32 @@ abstract contract AbstractPrizetapRaffle is
         );
     }
 
-    function drawRaffle(
+    function exchangePositions(
         uint256 raffleId,
-        uint256[] memory randomWords
-    ) internal virtual;
-
-    function requestRandomWords(uint256 raffleId) internal {
-        // Will revert if subscription is not set and funded.
-        uint256 requestId = CHAINLINK_VRF_COORDINATOR.requestRandomWords(
-            chainlinkKeyHash,
-            chainlinkVrfSubscriptionId,
-            vrfRequestConfirmations,
-            callbackGasLimit,
-            1
-        );
-        vrfRequests[requestId] = raffleId;
-        emit VRFRequestSent(requestId);
-    }
-
-    function fulfillRandomWords(
-        uint256 _requestId,
-        uint256[] memory _randomWords
-    ) internal override {
-        require(vrfRequests[_requestId] != 0, "VRF: Request not found");
-        drawRaffle(vrfRequests[_requestId], _randomWords);
-        emit VRFRequestFulfilled(_requestId, _randomWords);
+        address user1,
+        address user2,
+        uint256 position1,
+        uint256 position2
+    ) internal {
+        for (
+            uint256 i = 0;
+            i < participantPositions[raffleId][user1].length;
+            i++
+        ) {
+            if (participantPositions[raffleId][user1][i] == position1) {
+                participantPositions[raffleId][user1][i] = position2;
+                break;
+            }
+        }
+        for (
+            uint256 j = 0;
+            j < participantPositions[raffleId][user2].length;
+            j++
+        ) {
+            if (participantPositions[raffleId][user2][j] == position2) {
+                participantPositions[raffleId][user2][j] = position1;
+                break;
+            }
+        }
     }
 }

@@ -18,6 +18,26 @@ const networks = {
     url: "https://rpc.ankr.com/bsc_testnet_chapel",
     chainId: 97,
     accounts: [process.env.PRIVATE_KEY || missing_privateKey()]
+  },
+  polygon: {
+    url: `https://rpc.ankr.com/polygon/${process.env.ANKR_KEY}`,
+    chainId: 137,
+    accounts: [process.env.PRIVATE_KEY || missing_privateKey()]
+  },
+  polygonMumbai: {
+    url: `https://rpc.ankr.com/polygon_mumbai/`,
+    chainId: 80001,
+    accounts: [process.env.PRIVATE_KEY || missing_privateKey()]
+  },
+  lineaTestnet: {
+    url: `https://rpc.goerli.linea.build/`,
+    chainId: 59140,
+    accounts: [process.env.PRIVATE_KEY || missing_privateKey()]
+  },
+  lineaMainnet: {
+    url: `https://rpc.linea.build`,
+    chainId: 59144,
+    accounts: [process.env.PRIVATE_KEY || missing_privateKey()]
   }
 }
 
@@ -79,7 +99,8 @@ module.exports = {
       optimizer: {
         enabled: true,
         runs: 200
-      }
+      },
+      viaIR: true
     }
   },
   paths: {
@@ -96,7 +117,37 @@ module.exports = {
       mainnet: process.env.ETHERSCAN_KEY,
       sepolia: process.env.ETHERSCAN_KEY,
       goerli: process.env.ETHERSCAN_KEY,
-      bscTestnet: process.env.BSCSCAN_KEY
-    }
+      bscTestnet: process.env.BSCSCAN_KEY,
+      polygon: process.env.POLYGON_KEY,
+      polygonMumbai: process.env.POLYGON_KEY,
+      lineaTestnet: process.env.LINEASCAN_KEY,
+      lineaMainnet: process.env.LINEASCAN_KEY
+    },
+    customChains: [
+      {
+        network: "ftm",
+        chainId: 250,
+        urls: {
+          apiURL: "https://ftmscan.com/",
+          browserURL: "https://ftmscan.com/",
+        },
+      },
+      {
+        network: "lineaTestnet",
+        chainId: 59140,
+        urls: {
+          apiURL: "https://api-testnet.lineascan.build/api",
+          browserURL: "https://goerli.lineascan.build/",
+        },
+      },
+      {
+        network: "lineaMainnet",
+        chainId: 59144,
+        urls: {
+          apiURL: "https://api.lineascan.build/api",
+          browserURL: "https://lineascan.build/",
+        },
+      }
+    ]
   },
 }
