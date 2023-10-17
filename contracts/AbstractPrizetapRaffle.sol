@@ -183,7 +183,7 @@ abstract contract AbstractPrizetapRaffle is AccessControl, Pausable {
         bytes calldata gatewaySignature
     ) public {
         bytes32 hash = keccak256(
-            abi.encodePacked(muonAppId, reqId, expirationTime, randomNumbers)
+            abi.encodePacked(muonAppId, reqId, randomNumbers, expirationTime)
         );
         verifyMuonSig(reqId, hash, sign, gatewaySignature);
     }
