@@ -18,7 +18,7 @@ abstract contract AbstractPrizetapRaffle is AccessControl, Pausable {
 
     bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
 
-    uint32 public constant MAX_NUM_WINNERS = 500;
+    uint256 public constant MAX_NUM_WINNERS = 500;
 
     // Check if the wallet has already participated in the raffle
     // wallet => (raffleId => bool)
@@ -30,6 +30,10 @@ abstract contract AbstractPrizetapRaffle is AccessControl, Pausable {
     // raffleId => ( participant => positions[] )
     mapping(uint256 => mapping(address => uint256[]))
         public participantPositions;
+    // raffleId => ( index+1 => address )
+    mapping(uint256 => mapping(uint256 => address)) public raffleParticipants;
+    // raffleId => ( index+1 => address )
+    mapping(uint256 => mapping(uint256 => address)) public raffleWinners;
 
     uint256 public lastRaffleId = 0;
 
@@ -50,7 +54,11 @@ abstract contract AbstractPrizetapRaffle is AccessControl, Pausable {
     );
     event RaffleCreated(address indexed initiator, uint256 raffleId);
     event RaffleRejected(uint256 indexed raffleId, address indexed rejector);
-    event WinnersSpecified(uint256 indexed raffleId, address[] indexed winner);
+    event WinnersSpecified(
+        uint256 indexed raffleId,
+        uint256 fromId,
+        uint256 toId
+    );
     event PrizeClaimed(uint256 indexed raffleId, address indexed winner);
     event PrizeRefunded(uint256 indexed raffleId);
 
@@ -142,10 +150,18 @@ abstract contract AbstractPrizetapRaffle is AccessControl, Pausable {
     }
 
     function getParticipants(
-        uint256 raffleId
+        uint256 raffleId,
+        uint256 fromId,
+        uint256 toId
     ) external view virtual returns (address[] memory);
 
-    function drawRaffle(
+    function getWinners(
+        uint256 raffleId,
+        uint256 fromId,
+        uint256 toId
+    ) external view virtual returns (address[] memory);
+
+    function setRaffleRandomNumbers(
         uint256 raffleId,
         uint256 expirationTime,
         uint256[] calldata randomWords,
@@ -153,6 +169,12 @@ abstract contract AbstractPrizetapRaffle is AccessControl, Pausable {
         IMuonClient.SchnorrSign calldata signature,
         bytes calldata gatewaySignature
     ) external virtual;
+
+    function setWinners(uint256 raffleId, uint256 toId) external virtual;
+
+    function getWinnersCount(
+        uint256 raffleId
+    ) external view virtual returns (uint256);
 
     function verifyParticipationSig(
         uint256 raffleId,
@@ -218,23 +240,23 @@ abstract contract AbstractPrizetapRaffle is AccessControl, Pausable {
         uint256 position1,
         uint256 position2
     ) internal {
-        for (
-            uint256 i = 0;
-            i < participantPositions[raffleId][user1].length;
-            i++
-        ) {
-            if (participantPositions[raffleId][user1][i] == position1) {
-                participantPositions[raffleId][user1][i] = position2;
+        uint256[] storage user1Positions = participantPositions[raffleId][
+            user1
+        ];
+        uint256 user1PositionsLength = user1Positions.length;
+        uint256[] storage user2Positions = participantPositions[raffleId][
+            user2
+        ];
+        uint256 user2PositionsLength = user2Positions.length;
+        for (uint256 i = 0; i < user1PositionsLength; i++) {
+            if (user1Positions[i] == position1) {
+                user1Positions[i] = position2;
                 break;
             }
         }
-        for (
-            uint256 j = 0;
-            j < participantPositions[raffleId][user2].length;
-            j++
-        ) {
-            if (participantPositions[raffleId][user2][j] == position2) {
-                participantPositions[raffleId][user2][j] = position1;
+        for (uint256 j = 0; j < user2PositionsLength; j++) {
+            if (user2Positions[j] == position2) {
+                user2Positions[j] = position1;
                 break;
             }
         }
