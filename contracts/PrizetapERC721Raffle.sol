@@ -9,14 +9,17 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
     struct Raffle {
         address initiator;
         address collection;
-        uint256 tokenId;
+        uint256[] tokenIds;
         uint256 maxParticipants;
         uint256 maxMultiplier;
         uint256 startTime;
         uint256 endTime;
-        address[] participants;
+        uint256 lastParticipantIndex;
+        uint256 lastWinnerIndex;
         uint256 participantsCount;
-        address winner; // Winner = address(0) means raffle is not held yet
+        uint256 winnersCount;
+        uint256[] randomNumbers;
+        uint256 lastNotClaimedTokenIndex;
         bool exists;
         Status status;
         bytes32 requirementsHash;
@@ -24,14 +27,19 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
 
     bytes4 public constant _ERC721_RECEIVED = 0x150b7a02;
 
+    // raffleId => Raffle
     mapping(uint256 => Raffle) public raffles;
 
     modifier onlyWinner(uint256 raffleId) override {
         require(raffles[raffleId].exists, "The raffle does not exist");
         require(
-            raffles[raffleId].status == Status.HELD &&
-                msg.sender == raffles[raffleId].winner,
-            "Permission denied"
+            raffles[raffleId].status == Status.CLOSED,
+            "The raffle is still ongoing"
+        );
+        require(isWinner[raffleId][msg.sender], "You are not winner!");
+        require(
+            !isWinnerClaimed[raffleId][msg.sender],
+            "You already claimed the prize!"
         );
         _;
     }
@@ -47,7 +55,7 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
 
     modifier hasEnded(uint256 raffleId) {
         require(
-            raffles[raffleId].participants.length > 0,
+            raffles[raffleId].participantsCount > 0,
             "There is no participant in raffle"
         );
         require(
@@ -58,9 +66,6 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
     }
 
     constructor(
-        address _chainlinkVRFCoordinator,
-        uint64 _chainlinkVRFSubscriptionId,
-        bytes32 _chainlinkKeyHash,
         uint256 _muonAppId,
         IMuonClient.PublicKey memory _muonPublicKey,
         address _muon,
@@ -69,9 +74,6 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         address _operator
     )
         AbstractPrizetapRaffle(
-            _chainlinkVRFCoordinator,
-            _chainlinkVRFSubscriptionId,
-            _chainlinkKeyHash,
             _muonAppId,
             _muonPublicKey,
             _muon,
@@ -83,11 +85,12 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
 
     function createRaffle(
         address collection,
-        uint256 tokenId,
+        uint256[] calldata tokenIds,
         uint256 maxParticipants,
         uint256 maxMultiplier,
         uint256 startTime,
         uint256 endTime,
+        uint256 winnersCount,
         bytes32 requirementsHash
     ) external {
         require(maxParticipants > 0, "maxParticipants <= 0");
@@ -97,17 +100,29 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
             "startTime <= now + validationPeriod"
         );
         require(endTime > startTime, "endTime <= startTime");
-
-        IERC721(collection).safeTransferFrom(
-            msg.sender,
-            address(this),
-            tokenId
-        );
-
         require(
-            IERC721(collection).ownerOf(tokenId) == address(this),
-            "Not received the NFT"
+            winnersCount > 0 &&
+                winnersCount <= MAX_NUM_WINNERS &&
+                winnersCount <= maxParticipants,
+            "Invalid winnersCount"
         );
+        require(
+            tokenIds.length == winnersCount,
+            "tokenIds length mismatch with winnersCount"
+        );
+
+        for (uint256 i = 0; i < winnersCount; i++) {
+            IERC721(collection).safeTransferFrom(
+                msg.sender,
+                address(this),
+                tokenIds[i]
+            );
+
+            require(
+                IERC721(collection).ownerOf(tokenIds[i]) == address(this),
+                "Not received the NFT"
+            );
+        }
 
         uint256 raffleId = ++lastRaffleId;
 
@@ -115,11 +130,12 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
 
         raffle.initiator = msg.sender;
         raffle.collection = collection;
-        raffle.tokenId = tokenId;
+        raffle.tokenIds = tokenIds;
         raffle.maxParticipants = maxParticipants;
         raffle.maxMultiplier = maxMultiplier;
         raffle.startTime = startTime;
         raffle.endTime = endTime;
+        raffle.winnersCount = winnersCount;
         raffle.exists = true;
         raffle.requirementsHash = requirementsHash;
 
@@ -151,25 +167,19 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         isOpenRaffle(raffleId)
         checkParticipated(raffleId)
     {
+        Raffle storage raffle = raffles[raffleId];
+        require(raffle.startTime < block.timestamp, "Raffle is not started");
+        require(raffle.endTime >= block.timestamp, "Raffle time is up");
         require(
-            raffles[raffleId].startTime < block.timestamp,
-            "Raffle is not started"
-        );
-        require(
-            raffles[raffleId].endTime >= block.timestamp,
-            "Raffle time is up"
-        );
-        require(
-            raffles[raffleId].participantsCount <
-                raffles[raffleId].maxParticipants,
+            raffle.participantsCount < raffle.maxParticipants,
             "The maximum number of participants has been reached"
         );
         require(
-            raffles[raffleId].maxMultiplier >= multiplier,
+            raffle.maxMultiplier >= multiplier && multiplier > 0,
             "Invalid multiplier"
         );
 
-        verifyTSSAndGateway(
+        verifyParticipationSig(
             raffleId,
             multiplier,
             reqId,
@@ -177,51 +187,49 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
             gatewaySignature
         );
 
-        raffles[raffleId].participantsCount += 1;
+        raffle.participantsCount += 1;
 
         for (uint256 i = 0; i < multiplier; i++) {
-            raffles[raffleId].participants.push(msg.sender);
+            raffle.lastParticipantIndex++;
+            participantPositions[raffleId][msg.sender].push(
+                raffle.lastParticipantIndex
+            );
+            raffleParticipants[raffleId][raffle.lastParticipantIndex] = msg
+                .sender;
         }
 
         emit Participate(msg.sender, raffleId, multiplier);
     }
 
-    function heldRaffle(
-        uint256 raffleId
-    )
-        external
-        override
-        whenNotPaused
-        onlyOperatorOrAdmin
-        isOpenRaffle(raffleId)
-        hasEnded(raffleId)
-    {
-        raffles[raffleId].status = Status.CLOSED;
-        requestRandomWords(raffleId);
-
-        emit RaffleHeld(raffleId, msg.sender);
-    }
-
     function claimPrize(
         uint256 raffleId
     ) external override whenNotPaused onlyWinner(raffleId) {
-        raffles[raffleId].status = Status.CLAIMED;
+        isWinnerClaimed[raffleId][msg.sender] = true;
 
-        IERC721(raffles[raffleId].collection).safeTransferFrom(
+        uint256[] memory tokenIds = raffles[raffleId].tokenIds;
+
+        IERC721 collection = IERC721(raffles[raffleId].collection);
+
+        collection.safeTransferFrom(
             address(this),
             msg.sender,
-            raffles[raffleId].tokenId
+            tokenIds[raffles[raffleId].lastNotClaimedTokenIndex]
         );
+        raffles[raffleId].lastNotClaimedTokenIndex++;
 
         emit PrizeClaimed(raffleId, msg.sender);
     }
 
     function refundPrize(uint256 raffleId) external override whenNotPaused {
-        require(raffles[raffleId].participants.length == 0, "participants > 0");
+        require(raffles[raffleId].participantsCount == 0, "participants > 0");
         require(
             raffles[raffleId].status == Status.REJECTED ||
                 raffles[raffleId].endTime < block.timestamp,
             "The raffle is not rejected or expired"
+        );
+        require(
+            raffles[raffleId].status != Status.REFUNDED,
+            "The raffle is already refunded"
         );
         require(
             msg.sender == raffles[raffleId].initiator,
@@ -230,20 +238,93 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
 
         raffles[raffleId].status = Status.REFUNDED;
 
-        IERC721(raffles[raffleId].collection).safeTransferFrom(
-            address(this),
-            msg.sender,
-            raffles[raffleId].tokenId
+        uint256[] memory tokenIds = raffles[raffleId].tokenIds;
+        uint256 tokenIdsLength = tokenIds.length;
+
+        IERC721 collection = IERC721(raffles[raffleId].collection);
+
+        for (uint256 i = 0; i < tokenIdsLength; i++) {
+            collection.safeTransferFrom(address(this), msg.sender, tokenIds[i]);
+        }
+
+        emit PrizeRefunded(raffleId);
+    }
+
+    function refundRemainingPrizes(uint256 raffleId) external whenNotPaused {
+        Raffle storage raffle = raffles[raffleId];
+        require(
+            raffle.participantsCount < raffle.winnersCount,
+            "participants > winners"
         );
+        require(raffle.status == Status.CLOSED, "The raffle is not closed");
+        require(msg.sender == raffle.initiator, "Permission denied!");
+
+        raffle.status = Status.REFUNDED;
+
+        uint256[] memory tokenIds = raffle.tokenIds;
+
+        IERC721 collection = IERC721(raffle.collection);
+        uint256 remainingTokens = raffle.winnersCount -
+            raffle.participantsCount;
+
+        for (uint256 i = 0; i < remainingTokens; i++) {
+            collection.safeTransferFrom(
+                address(this),
+                msg.sender,
+                tokenIds[raffle.lastNotClaimedTokenIndex]
+            );
+            raffle.lastNotClaimedTokenIndex++;
+        }
 
         emit PrizeRefunded(raffleId);
     }
 
     function getParticipants(
-        uint256 raffleId
-    ) external view override returns (address[] memory) {
-        Raffle memory raffle = raffles[raffleId];
-        return raffle.participants;
+        uint256 raffleId,
+        uint256 fromId,
+        uint256 toId
+    ) external view override returns (address[] memory participants) {
+        fromId = fromId > 0 ? fromId : 1;
+        toId = toId <= raffles[raffleId].lastParticipantIndex
+            ? toId
+            : raffles[raffleId].lastParticipantIndex;
+        require(fromId <= toId, "Invalid range!");
+
+        participants = new address[](toId - fromId + 1);
+
+        uint256 j = 0;
+        for (uint256 i = fromId; i <= toId; i++) {
+            participants[j++] = raffleParticipants[raffleId][i];
+        }
+
+        // Resize the array to remove any unused elements
+        assembly {
+            mstore(participants, j)
+        }
+    }
+
+    function getWinners(
+        uint256 raffleId,
+        uint256 fromId,
+        uint256 toId
+    ) external view override returns (address[] memory winners) {
+        fromId = fromId > 0 ? fromId : 1;
+        toId = toId <= raffles[raffleId].lastWinnerIndex
+            ? toId
+            : raffles[raffleId].lastWinnerIndex;
+        require(fromId <= toId, "Invalid range!");
+
+        winners = new address[](toId - fromId + 1);
+
+        uint256 j = 0;
+        for (uint256 i = fromId; i <= toId; i++) {
+            winners[j++] = raffleWinners[raffleId][i];
+        }
+
+        // Resize the array to remove any unused elements
+        assembly {
+            mstore(winners, j)
+        }
     }
 
     function onERC721Received(
@@ -255,22 +336,120 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         return _ERC721_RECEIVED;
     }
 
-    function drawRaffle(
+    function setRaffleRandomNumbers(
         uint256 raffleId,
-        uint256[] memory randomWords
-    ) internal override hasEnded(raffleId) {
+        uint256 expirationTime,
+        uint256[] calldata randomNumbers,
+        bytes calldata reqId,
+        IMuonClient.SchnorrSign calldata signature,
+        bytes calldata gatewaySignature
+    )
+        external
+        override
+        whenNotPaused
+        isOpenRaffle(raffleId)
+        hasEnded(raffleId)
+    {
         require(
-            raffles[raffleId].status == Status.CLOSED,
-            "The raffle is not closed"
+            randomNumbers.length == raffles[raffleId].winnersCount,
+            "Invalid number of random words"
         );
-        uint256 indexOfWinner = randomWords[0] %
-            raffles[raffleId].participants.length;
+        require(
+            block.timestamp <= expirationTime,
+            "The random numbers have expired"
+        );
+        require(
+            raffles[raffleId].randomNumbers.length == 0,
+            "The random numbers are already set"
+        );
 
-        raffles[raffleId].status = Status.HELD;
-        raffles[raffleId].winner = raffles[raffleId].participants[
-            indexOfWinner
+        verifyRandomNumberSig(
+            expirationTime,
+            randomNumbers,
+            reqId,
+            signature,
+            gatewaySignature
+        );
+        raffles[raffleId].randomNumbers = randomNumbers;
+    }
+
+    function setWinners(
+        uint256 raffleId,
+        uint256 toId
+    )
+        external
+        override
+        whenNotPaused
+        isOpenRaffle(raffleId)
+        hasEnded(raffleId)
+    {
+        Raffle storage raffle = raffles[raffleId];
+        uint256[] memory randomNumbers = raffle.randomNumbers;
+
+        require(randomNumbers.length > 0, "Random numbers are not set");
+        require(
+            toId > raffle.lastWinnerIndex && toId <= raffle.winnersCount,
+            "Invalid toId"
+        );
+
+        uint256 participantsLength = raffle.lastParticipantIndex;
+        uint256 fromId = raffle.lastWinnerIndex + 1;
+        for (uint256 i = fromId; i <= toId; i++) {
+            if (participantsLength == 0) {
+                break;
+            }
+            uint256 indexOfWinner = (randomNumbers[i - 1] %
+                participantsLength) + 1;
+            address winner = raffleParticipants[raffleId][indexOfWinner];
+            raffleWinners[raffleId][i] = winner;
+            isWinner[raffleId][winner] = true;
+            participantsLength = moveWinnerToEnd(
+                raffleId,
+                winner,
+                participantsLength
+            );
+        }
+        raffle.lastWinnerIndex = toId;
+        if (toId == raffle.winnersCount) {
+            raffles[raffleId].status = Status.CLOSED;
+        }
+
+        emit WinnersSpecified(raffleId, fromId, toId);
+    }
+
+    function getWinnersCount(
+        uint256 raffleId
+    ) external view override returns (uint256 winnersCount) {
+        winnersCount = raffles[raffleId].winnersCount;
+    }
+
+    function moveWinnerToEnd(
+        uint256 raffleId,
+        address winner,
+        uint256 participantsLength
+    ) internal returns (uint256) {
+        uint256[] memory winnerPositions = participantPositions[raffleId][
+            winner
         ];
+        uint256 positionsLength = winnerPositions.length;
 
-        emit WinnerSpecified(raffleId, raffles[raffleId].winner);
+        for (uint256 j = 0; j < positionsLength; j++) {
+            uint256 winnerIndex = winnerPositions[j];
+            uint256 lastIndex = participantsLength;
+            address lastParticipant = raffleParticipants[raffleId][lastIndex];
+            if (winner != lastParticipant) {
+                raffleParticipants[raffleId][winnerIndex] = lastParticipant;
+                raffleParticipants[raffleId][lastIndex] = winner;
+                exchangePositions(
+                    raffleId,
+                    winner,
+                    lastParticipant,
+                    winnerIndex,
+                    lastIndex
+                );
+            }
+            participantsLength--;
+        }
+        return participantsLength;
     }
 }
