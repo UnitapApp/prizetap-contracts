@@ -170,6 +170,7 @@ contract LineaPrizetapERC721 is AbstractPrizetapRaffle, IERC721Receiver {
                 ] = participant;
             }
         }
+        lastNotWinnerIndexes[_raffleId] = raffle.lastParticipantIndex;
     }
 
     function claimPrize(uint256 raffleId) external override {}
@@ -289,7 +290,7 @@ contract LineaPrizetapERC721 is AbstractPrizetapRaffle, IERC721Receiver {
             "Invalid toId"
         );
 
-        uint256 participantsLength = raffle.lastParticipantIndex;
+        uint256 participantsLength = lastNotWinnerIndexes[raffleId];
         uint256 fromId = raffle.lastWinnerIndex + 1;
         for (uint256 i = fromId; i <= toId; i++) {
             if (participantsLength == 0) {
@@ -306,6 +307,7 @@ contract LineaPrizetapERC721 is AbstractPrizetapRaffle, IERC721Receiver {
                 participantsLength
             );
         }
+        lastNotWinnerIndexes[raffleId] = participantsLength;
         raffle.lastWinnerIndex = toId;
         if (toId == raffle.winnersCount) {
             raffles[raffleId].status = Status.CLOSED;

@@ -34,6 +34,8 @@ abstract contract AbstractPrizetapRaffle is AccessControl, Pausable {
     mapping(uint256 => mapping(uint256 => address)) public raffleParticipants;
     // raffleId => ( index+1 => address )
     mapping(uint256 => mapping(uint256 => address)) public raffleWinners;
+    // raffleId => lastNotWinnerIndex
+    mapping(uint256 => uint256) public lastNotWinnerIndexes;
 
     uint256 public lastRaffleId = 0;
 

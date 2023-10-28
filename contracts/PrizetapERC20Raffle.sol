@@ -202,6 +202,7 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
             raffleParticipants[raffleId][raffle.lastParticipantIndex] = msg
                 .sender;
         }
+        lastNotWinnerIndexes[raffleId] = raffle.lastParticipantIndex;
 
         emit Participate(msg.sender, raffleId, multiplier);
     }
@@ -383,7 +384,7 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
             "Invalid toId"
         );
 
-        uint256 participantsLength = raffle.lastParticipantIndex;
+        uint256 participantsLength = lastNotWinnerIndexes[raffleId];
         uint256 fromId = raffle.lastWinnerIndex + 1;
         for (uint256 i = fromId; i <= toId; i++) {
             if (participantsLength == 0) {
@@ -400,6 +401,7 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
                 participantsLength
             );
         }
+        lastNotWinnerIndexes[raffleId] = participantsLength;
         raffle.lastWinnerIndex = toId;
         if (toId == raffle.winnersCount) {
             raffles[raffleId].status = Status.CLOSED;
