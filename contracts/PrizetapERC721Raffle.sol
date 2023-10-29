@@ -32,10 +32,6 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
 
     modifier onlyWinner(uint256 raffleId) override {
         require(raffles[raffleId].exists, "The raffle does not exist");
-        require(
-            raffles[raffleId].status == Status.CLOSED,
-            "The raffle is still ongoing"
-        );
         require(isWinner[raffleId][msg.sender], "You are not winner!");
         require(
             !isWinnerClaimed[raffleId][msg.sender],
