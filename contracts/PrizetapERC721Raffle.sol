@@ -420,34 +420,4 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
     ) external view override returns (uint256 winnersCount) {
         winnersCount = raffles[raffleId].winnersCount;
     }
-
-    function moveWinnerToEnd(
-        uint256 raffleId,
-        address winner,
-        uint256 participantsLength
-    ) internal returns (uint256) {
-        uint256[] memory winnerPositions = participantPositions[raffleId][
-            winner
-        ];
-        uint256 positionsLength = winnerPositions.length;
-
-        for (uint256 j = 0; j < positionsLength; j++) {
-            uint256 winnerIndex = winnerPositions[j];
-            uint256 lastIndex = participantsLength;
-            address lastParticipant = raffleParticipants[raffleId][lastIndex];
-            if (winner != lastParticipant) {
-                raffleParticipants[raffleId][winnerIndex] = lastParticipant;
-                raffleParticipants[raffleId][lastIndex] = winner;
-                exchangePositions(
-                    raffleId,
-                    winner,
-                    lastParticipant,
-                    winnerIndex,
-                    lastIndex
-                );
-            }
-            participantsLength--;
-        }
-        return participantsLength;
-    }
 }

@@ -235,6 +235,31 @@ abstract contract AbstractPrizetapRaffle is AccessControl, Pausable {
         );
     }
 
+    function moveWinnerToEnd(
+        uint256 raffleId,
+        address winner,
+        uint256 participantsLength
+    ) internal returns (uint256) {
+        uint256 positionsLength = participantPositions[raffleId][winner].length;
+
+        for (uint256 j = 0; j < positionsLength; j++) {
+            uint256 winnerIndex = participantPositions[raffleId][winner][j];
+            uint256 lastIndex = participantsLength;
+            address lastParticipant = raffleParticipants[raffleId][lastIndex];
+            raffleParticipants[raffleId][winnerIndex] = lastParticipant;
+            raffleParticipants[raffleId][lastIndex] = winner;
+            exchangePositions(
+                raffleId,
+                winner,
+                lastParticipant,
+                winnerIndex,
+                lastIndex
+            );
+            participantsLength--;
+        }
+        return participantsLength;
+    }
+
     function exchangePositions(
         uint256 raffleId,
         address user1,
@@ -250,17 +275,21 @@ abstract contract AbstractPrizetapRaffle is AccessControl, Pausable {
             user2
         ];
         uint256 user2PositionsLength = user2Positions.length;
+        uint256 positionIndex1;
+        uint256 positionIndex2;
         for (uint256 i = 0; i < user1PositionsLength; i++) {
             if (user1Positions[i] == position1) {
-                user1Positions[i] = position2;
+                positionIndex1 = i;
                 break;
             }
         }
         for (uint256 j = 0; j < user2PositionsLength; j++) {
             if (user2Positions[j] == position2) {
-                user2Positions[j] = position1;
+                positionIndex2 = j;
                 break;
             }
         }
+        user1Positions[positionIndex1] = position2;
+        user2Positions[positionIndex2] = position1;
     }
 }
