@@ -1,43 +1,50 @@
-require("@nomicfoundation/hardhat-toolbox");
+import "@nomicfoundation/hardhat-toolbox";
+import { HardhatUserConfig, task } from "hardhat/config";
+import { HttpNetworkUserConfig } from "hardhat/types";
+
 require('dotenv').config();
 const Web3 = require('web3');
 
-
-const networks = {
+const networks: { [networkName: string]: HttpNetworkUserConfig } = {
   sepolia: {
     url: "https://rpc.ankr.com/eth_sepolia",
     chainId: 11155111,
-    accounts: [process.env.PRIVATE_KEY || missing_privateKey()]
+    accounts: [process.env.PRIVATE_KEY || missing_privateKey()!]
   },
   goerli: {
     url: "https://rpc.ankr.com/eth_goerli",
     chainId: 5,
-    accounts: [process.env.PRIVATE_KEY || missing_privateKey()]
+    accounts: [process.env.PRIVATE_KEY || missing_privateKey()!]
   },
   bscTestnet: {
     url: "https://rpc.ankr.com/bsc_testnet_chapel",
     chainId: 97,
-    accounts: [process.env.PRIVATE_KEY || missing_privateKey()]
+    accounts: [process.env.PRIVATE_KEY || missing_privateKey()!]
   },
   polygon: {
     url: `https://rpc.ankr.com/polygon/${process.env.ANKR_KEY}`,
     chainId: 137,
-    accounts: [process.env.PRIVATE_KEY || missing_privateKey()]
+    accounts: [process.env.PRIVATE_KEY || missing_privateKey()!]
   },
   polygonMumbai: {
     url: `https://rpc.ankr.com/polygon_mumbai/`,
     chainId: 80001,
-    accounts: [process.env.PRIVATE_KEY || missing_privateKey()]
+    accounts: [process.env.PRIVATE_KEY || missing_privateKey()!]
   },
   lineaTestnet: {
     url: `https://rpc.goerli.linea.build/`,
     chainId: 59140,
-    accounts: [process.env.PRIVATE_KEY || missing_privateKey()]
+    accounts: [process.env.PRIVATE_KEY || missing_privateKey()!]
   },
   lineaMainnet: {
     url: `https://rpc.linea.build`,
     chainId: 59144,
-    accounts: [process.env.PRIVATE_KEY || missing_privateKey()]
+    accounts: [process.env.PRIVATE_KEY || missing_privateKey()!]
+  },
+  optimisticEthereum: {
+    url: `https://rpc.ankr.com/optimism/${process.env.ANKR_KEY}`,
+    chainId: 10,
+    accounts: [process.env.PRIVATE_KEY || missing_privateKey()!]
   }
 }
 
@@ -47,7 +54,7 @@ function missing_privateKey() {
 
 task("account", "returns nonce and balance for specified address on multiple networks")
   .addParam("address")
-  .setAction(async taskArgs => {
+  .setAction(async (taskArgs: {address: string}) => {
     
 
     let resultArr  = Object.keys(networks).map(async network => {
@@ -76,7 +83,7 @@ task("account", "returns nonce and balance for specified address on multiple net
 task("verify-cli", "verify contract on the specified network")
   .addParam("address")
   .addParam("name")
-  .setAction(async taskArgs => {
+  .setAction(async (taskArgs: {address: string, name: string}) => {
     
     const verify = require("./scripts/verify");
 
@@ -86,8 +93,8 @@ task("verify-cli", "verify contract on the specified network")
 
 
 
-module.exports = {
-  defaultNetwork: "goerli",
+const config: HardhatUserConfig = {
+  defaultNetwork: "hardhat",
   networks: {
     hardhat: {
     },
@@ -114,14 +121,15 @@ module.exports = {
   },
   etherscan: {
     apiKey: {
-      mainnet: process.env.ETHERSCAN_KEY,
-      sepolia: process.env.ETHERSCAN_KEY,
-      goerli: process.env.ETHERSCAN_KEY,
-      bscTestnet: process.env.BSCSCAN_KEY,
-      polygon: process.env.POLYGON_KEY,
-      polygonMumbai: process.env.POLYGON_KEY,
-      lineaTestnet: process.env.LINEASCAN_KEY,
-      lineaMainnet: process.env.LINEASCAN_KEY
+      mainnet: process.env.ETHERSCAN_KEY || "",
+      sepolia: process.env.ETHERSCAN_KEY || "",
+      goerli: process.env.ETHERSCAN_KEY || "",
+      bscTestnet: process.env.BSCSCAN_KEY || "",
+      polygon: process.env.POLYGON_KEY || "",
+      polygonMumbai: process.env.POLYGON_KEY || "",
+      lineaTestnet: process.env.LINEASCAN_KEY || "",
+      lineaMainnet: process.env.LINEASCAN_KEY || "",
+      optimisticEthereum: process.env.OPTIMISM_KEY || ""
     },
     customChains: [
       {
@@ -151,3 +159,5 @@ module.exports = {
     ]
   },
 }
+
+export default config;
