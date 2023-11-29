@@ -53,6 +53,7 @@ describe("PrizetapERC721Raffle", function () {
   let user3: SignerWithAddress;
   let user4: SignerWithAddress;
   let user5: SignerWithAddress;
+  let user6: SignerWithAddress;
 
   const participateInRaffle = async (
     user: SignerWithAddress, 
@@ -103,6 +104,7 @@ describe("PrizetapERC721Raffle", function () {
       user3,
       user4,
       user5,
+      user6
     ] = await ethers.getSigners();
 
     const collectionFactory = await ethers.getContractFactory("ERC721Test");
@@ -165,13 +167,11 @@ describe("PrizetapERC721Raffle", function () {
       [6,7],
       1000,
       10,
-      now + 7,
-      now + 1800,
+      now + 20,
+      now + 30,
       2,
       `0x${"0".repeat(64)}`
     );
-
-    await time.increase(10);
 
   });
 
@@ -257,7 +257,20 @@ describe("PrizetapERC721Raffle", function () {
   });
 
   describe("Participate in raffle", async function() {
+    it("Should prevent the participation in a raffle which is not started yet", 
+      async function () {
+      const sig = await getDummyParticipationSig(
+        prizetap.address,
+        user1.address,
+        2,
+        5
+      );
+      await expect(participateInRaffle(user1, 2, 5, sig))
+        .to.be.revertedWith("Raffle is not started");
+    });
+
     it("Should participate in raffle successfully", async function () {
+      await time.increase(10);
       const sig = await getDummyParticipationSig(
         prizetap.address,
         user1.address,
@@ -283,6 +296,107 @@ describe("PrizetapERC721Raffle", function () {
       );
       await expect(participateInRaffle(user2, 1, 11, sig))
         .to.be.revertedWith("Invalid multiplier");
+    });
+
+    it("Should prevent participation in raffle with invalid signature", 
+      async function () {
+      const sig = await getDummyParticipationSig(
+        prizetap.address,
+        user2.address,
+        1,
+        6
+      );
+      await expect(participateInRaffle(user3, 1, 6, sig))
+        .to.be.revertedWith("Invalid signature!");
+    });
+
+    it("Should prevent manipulating the multiplier", 
+      async function () {
+      const sig = await getDummyParticipationSig(
+        prizetap.address,
+        user3.address,
+        1,
+        6
+      );
+      await expect(participateInRaffle(user3, 1, 7, sig))
+        .to.be.revertedWith("Invalid signature!");
+    });
+
+    it("Should prevent manipulating the raffleId", 
+      async function () {
+      const sig = await getDummyParticipationSig(
+        prizetap.address,
+        user3.address,
+        1,
+        6
+      );
+      await expect(participateInRaffle(user3, 2, 6, sig))
+        .to.be.revertedWith("Invalid signature!");
+    });
+
+    it("Should prevent repeating the participation in a raffle", 
+      async function () {
+      const sig = await getDummyParticipationSig(
+        prizetap.address,
+        user1.address,
+        1,
+        6
+      );
+      await expect(participateInRaffle(user1, 1, 6, sig))
+        .to.be.revertedWith("Already participated");
+    });
+
+    it("Should prevent the participation in a raffle which is ended", 
+      async function () {
+      await time.increase(10)
+      const sig = await getDummyParticipationSig(
+        prizetap.address,
+        user1.address,
+        2,
+        5
+      );
+      await expect(participateInRaffle(user1, 2, 5, sig))
+        .to.be.revertedWith("Raffle time is up");
+    });
+
+    it("Should not participate in a raffle when the maxParticipants is reached", 
+      async function () {
+      let sig = await getDummyParticipationSig(
+        prizetap.address,
+        user2.address,
+        1,
+        1
+      );
+      await participateInRaffle(user2, 1, 1, sig);
+      sig = await getDummyParticipationSig(
+        prizetap.address,
+        user3.address,
+        1,
+        1
+      );
+      await participateInRaffle(user3, 1, 1, sig);
+      sig = await getDummyParticipationSig(
+        prizetap.address,
+        user4.address,
+        1,
+        1
+      );
+      await participateInRaffle(user4, 1, 1, sig);
+      sig = await getDummyParticipationSig(
+        prizetap.address,
+        user5.address,
+        1,
+        1
+      );
+      await participateInRaffle(user5, 1, 1, sig);
+      sig = await getDummyParticipationSig(
+        prizetap.address,
+        user6.address,
+        1,
+        1
+      );
+      await expect(participateInRaffle(user6, 1, 1, sig))
+        .to.be.revertedWith("The maximum number of participants has been reached");
     });
   });
 
@@ -694,13 +808,26 @@ describe("PrizetapERC721Raffle", function () {
         expect(raffle.status).to.eq(2);
     });
 
-    it("Should not allow the initiator to refund the prize when the raffle is still not rejected or ended", 
+    it("Should not allow the initiator to refund the prize when the raffle is not rejected or ended yet", 
       async function () {
-        let raffle = await prizetap.raffles(2);
+        await collection.connect(deployer).mint(initiator2.address, 13);
+        await collection.connect(initiator2).approve(prizetap.address, 13);
+        const now = await time.latest();
+        await prizetap.connect(initiator2).createRaffle(
+          collection.address,
+          [13],
+          1000,
+          10,
+          now + 5,
+          now + 180,
+          1,
+          `0x${"0".repeat(64)}`
+        );
+        let raffle = await prizetap.raffles(7);
         expect(raffle.status).to.eq(0);
-        await expect(prizetap.connect(initiator2).refundPrize(2))
+        await expect(prizetap.connect(initiator2).refundPrize(7))
           .to.be.revertedWith("The raffle is not rejected or expired");
-        raffle = await prizetap.raffles(2);
+        raffle = await prizetap.raffles(7);
         expect(raffle.status).to.eq(0);
     });
 
@@ -736,7 +863,7 @@ describe("PrizetapERC721Raffle", function () {
         expect(raffle.status).to.eq(3);
     });
 
-    it("Should not allow the initiator refund the remaining prizes when the raffle is still not closed", 
+    it("Should not allow the initiator refund the remaining prizes when the raffle is not closed yet", 
       async function () {
         let raffle = await prizetap.raffles(6);
         expect(raffle.status).to.eq(0);
@@ -787,6 +914,16 @@ describe("PrizetapERC721Raffle", function () {
           .to.be.revertedWith("The raffle is not closed");
         raffle = await prizetap.raffles(6);
         expect(raffle.status).to.eq(3);
+    });
+
+    it("Should not allow the initiator refund the remaining prizes when the participants is not less than winners", 
+      async function () {
+        let raffle = await prizetap.raffles(1);
+        expect(raffle.status).to.eq(0);
+        await expect(prizetap.connect(initiator1).refundRemainingPrizes(1))
+          .to.be.revertedWith("participants > winners");
+        raffle = await prizetap.raffles(1);
+        expect(raffle.status).to.eq(0);
     });
   });
 
