@@ -415,6 +415,19 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         emit WinnersSpecified(raffleId, fromId, toId);
     }
 
+    function adminWithdraw(
+        address _collection,
+        uint256[] memory _nftIds,
+        address _to
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_to != address(0), "Invalid recipient");
+        uint256 length = _nftIds.length;
+        IERC721 collection = IERC721(_collection);
+        for (uint256 i = 0; i < length; i++) {
+            collection.safeTransferFrom(address(this), _to, _nftIds[i]);
+        }
+    }
+
     function getWinnersCount(
         uint256 raffleId
     ) external view override returns (uint256 winnersCount) {

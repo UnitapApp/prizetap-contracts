@@ -406,6 +406,19 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
         emit WinnersSpecified(raffleId, fromId, toId);
     }
 
+    function adminWithdraw(
+        uint256 _amount,
+        address _to,
+        address _tokenAddr
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_to != address(0), "Invalid recipient");
+        if (_tokenAddr == address(0)) {
+            payable(_to).transfer(_amount);
+        } else {
+            IERC20(_tokenAddr).transfer(_to, _amount);
+        }
+    }
+
     function getWinnersCount(
         uint256 raffleId
     ) external view override returns (uint256 winnersCount) {
