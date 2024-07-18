@@ -198,6 +198,57 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         emit Participate(msg.sender, raffleId, multiplier);
     }
 
+    function batchParticipate(
+        uint256 raffleId,
+        address[] calldata participants,
+        uint256[] calldata multipliers
+    ) external isOpenRaffle(raffleId) onlyOperatorOrAdmin {
+        Raffle storage raffle = raffles[raffleId];
+        require(raffle.startTime < block.timestamp, "Raffle is not started");
+        require(raffle.endTime >= block.timestamp, "Raffle time is up");
+        uint256 participantsLength = participants.length;
+        require(participantsLength == multipliers.length, "Mismatched lengths");
+        require(
+            participantsLength > 0 && participantsLength <= 100,
+            "Invalid length"
+        );
+        require(
+            raffle.participantsCount + participantsLength <=
+                raffle.maxParticipants,
+            "The maximum number of participants has been reached"
+        );
+
+        raffle.participantsCount += participantsLength;
+
+        for (uint256 i = 0; i < participantsLength; i++) {
+            uint256 multiplier = multipliers[i];
+            address participant = participants[i];
+
+            require(
+                !isParticipated[participant][raffleId],
+                "Already participated"
+            );
+            isParticipated[participant][raffleId] = true;
+
+            require(
+                raffle.maxMultiplier >= multiplier && multiplier > 0,
+                "Invalid multiplier"
+            );
+            for (uint256 j = 0; j < multiplier; j++) {
+                raffle.lastParticipantIndex++;
+                participantPositions[raffleId][participant].push(
+                    raffle.lastParticipantIndex
+                );
+                raffleParticipants[raffleId][
+                    raffle.lastParticipantIndex
+                ] = participant;
+            }
+
+            emit Participate(participant, raffleId, multiplier);
+        }
+        lastNotWinnerIndexes[raffleId] = raffle.lastParticipantIndex;
+    }
+
     function claimPrize(
         uint256 raffleId
     ) external override whenNotPaused onlyWinner(raffleId) {
