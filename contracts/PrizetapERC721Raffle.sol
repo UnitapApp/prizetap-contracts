@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721ReceiverUpgradeable.sol";
 import "./AbstractPrizetapRaffle.sol";
 
-contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
+contract PrizetapERC721Raffle is
+    AbstractPrizetapRaffle,
+    IERC721ReceiverUpgradeable
+{
     struct Raffle {
         address initiator;
         address collection;
@@ -61,23 +64,41 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         _;
     }
 
-    constructor(
+    function initialize(
         uint256 _muonAppId,
         IMuonClient.PublicKey memory _muonPublicKey,
         address _muon,
         address _muonValidGateway,
         address _admin,
         address _operator
-    )
-        AbstractPrizetapRaffle(
+    ) external initializer {
+        __PrizetapERC721Raffle_init(
             _muonAppId,
             _muonPublicKey,
             _muon,
             _muonValidGateway,
             _admin,
             _operator
-        )
-    {}
+        );
+    }
+
+    function __PrizetapERC721Raffle_init(
+        uint256 _muonAppId,
+        IMuonClient.PublicKey memory _muonPublicKey,
+        address _muon,
+        address _muonValidGateway,
+        address _admin,
+        address _operator
+    ) internal initializer {
+        __AbstractPrizetapRaffle_init(
+            _muonAppId,
+            _muonPublicKey,
+            _muon,
+            _muonValidGateway,
+            _admin,
+            _operator
+        );
+    }
 
     function createRaffle(
         address collection,
@@ -108,14 +129,15 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         );
 
         for (uint256 i = 0; i < winnersCount; i++) {
-            IERC721(collection).safeTransferFrom(
+            IERC721Upgradeable(collection).safeTransferFrom(
                 msg.sender,
                 address(this),
                 tokenIds[i]
             );
 
             require(
-                IERC721(collection).ownerOf(tokenIds[i]) == address(this),
+                IERC721Upgradeable(collection).ownerOf(tokenIds[i]) ==
+                    address(this),
                 "Not received the NFT"
             );
         }
@@ -256,7 +278,9 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
 
         uint256[] memory tokenIds = raffles[raffleId].tokenIds;
 
-        IERC721 collection = IERC721(raffles[raffleId].collection);
+        IERC721Upgradeable collection = IERC721Upgradeable(
+            raffles[raffleId].collection
+        );
 
         collection.safeTransferFrom(
             address(this),
@@ -289,7 +313,9 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         uint256[] memory tokenIds = raffles[raffleId].tokenIds;
         uint256 tokenIdsLength = tokenIds.length;
 
-        IERC721 collection = IERC721(raffles[raffleId].collection);
+        IERC721Upgradeable collection = IERC721Upgradeable(
+            raffles[raffleId].collection
+        );
 
         for (uint256 i = 0; i < tokenIdsLength; i++) {
             collection.safeTransferFrom(address(this), msg.sender, tokenIds[i]);
@@ -311,7 +337,7 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
 
         uint256[] memory tokenIds = raffle.tokenIds;
 
-        IERC721 collection = IERC721(raffle.collection);
+        IERC721Upgradeable collection = IERC721Upgradeable(raffle.collection);
         uint256 remainingTokens = raffle.winnersCount -
             raffle.participantsCount;
 
@@ -473,7 +499,7 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
     ) public onlyRole(DEFAULT_ADMIN_ROLE) {
         require(_to != address(0), "Invalid recipient");
         uint256 length = _nftIds.length;
-        IERC721 collection = IERC721(_collection);
+        IERC721Upgradeable collection = IERC721Upgradeable(_collection);
         for (uint256 i = 0; i < length; i++) {
             collection.safeTransferFrom(address(this), _to, _nftIds[i]);
         }
@@ -483,5 +509,9 @@ contract PrizetapERC721Raffle is AbstractPrizetapRaffle, IERC721Receiver {
         uint256 raffleId
     ) external view override returns (uint256 winnersCount) {
         winnersCount = raffles[raffleId].winnersCount;
+    }
+
+    function testUpgrade() external pure returns (bool) {
+        return false;
     }
 }

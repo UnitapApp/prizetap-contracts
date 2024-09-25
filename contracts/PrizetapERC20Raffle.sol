@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
 import "./AbstractPrizetapRaffle.sol";
 
 contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
-    using SafeERC20 for IERC20;
+    using SafeERC20Upgradeable for IERC20Upgradeable;
 
     struct Raffle {
         address initiator;
@@ -60,23 +60,43 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
         _;
     }
 
-    constructor(
+    function initialize(
         uint256 _muonAppId,
         IMuonClient.PublicKey memory _muonPublicKey,
         address _muon,
         address _muonValidGateway,
         address _admin,
         address _operator
-    )
-        AbstractPrizetapRaffle(
+    ) external initializer {
+        __PrizetapERC20Raffle_init(
             _muonAppId,
             _muonPublicKey,
             _muon,
             _muonValidGateway,
             _admin,
             _operator
-        )
-    {}
+        );
+    }
+
+    function __PrizetapERC20Raffle_init(
+        uint256 _muonAppId,
+        IMuonClient.PublicKey memory _muonPublicKey,
+        address _muon,
+        address _muonValidGateway,
+        address _admin,
+        address _operator
+    ) internal initializer {
+        __AbstractPrizetapRaffle_init(
+            _muonAppId,
+            _muonPublicKey,
+            _muon,
+            _muonValidGateway,
+            _admin,
+            _operator
+        );
+    }
+
+    function __PrizetapERC20Raffle_init_unchained() internal initializer {}
 
     function createRaffle(
         uint256 amount,
@@ -108,16 +128,19 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
         if (currency == address(0)) {
             require(msg.value == totalPrizeAmount, "!msg.value");
         } else {
-            uint256 balance = IERC20(currency).balanceOf(address(this));
+            uint256 balance = IERC20Upgradeable(currency).balanceOf(
+                address(this)
+            );
 
-            IERC20(currency).safeTransferFrom(
+            IERC20Upgradeable(currency).safeTransferFrom(
                 msg.sender,
                 address(this),
                 totalPrizeAmount
             );
 
-            uint256 receivedAmount = IERC20(currency).balanceOf(address(this)) -
-                balance;
+            uint256 receivedAmount = IERC20Upgradeable(currency).balanceOf(
+                address(this)
+            ) - balance;
 
             require(
                 totalPrizeAmount == receivedAmount,
@@ -263,7 +286,7 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
         if (currency == address(0)) {
             payable(msg.sender).transfer(raffles[raffleId].prizeAmount);
         } else {
-            IERC20(currency).safeTransfer(
+            IERC20Upgradeable(currency).safeTransfer(
                 msg.sender,
                 raffles[raffleId].prizeAmount
             );
@@ -297,7 +320,10 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
         if (currency == address(0)) {
             payable(msg.sender).transfer(totalPrizeAmount);
         } else {
-            IERC20(currency).safeTransfer(msg.sender, totalPrizeAmount);
+            IERC20Upgradeable(currency).safeTransfer(
+                msg.sender,
+                totalPrizeAmount
+            );
         }
 
         emit PrizeRefunded(raffleId);
@@ -321,7 +347,10 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
         if (currency == address(0)) {
             payable(msg.sender).transfer(totalPrizeAmount);
         } else {
-            IERC20(currency).safeTransfer(msg.sender, totalPrizeAmount);
+            IERC20Upgradeable(currency).safeTransfer(
+                msg.sender,
+                totalPrizeAmount
+            );
         }
 
         emit PrizeRefunded(raffleId);
@@ -466,7 +495,7 @@ contract PrizetapERC20Raffle is AbstractPrizetapRaffle {
         if (_tokenAddr == address(0)) {
             payable(_to).transfer(_amount);
         } else {
-            IERC20(_tokenAddr).transfer(_to, _amount);
+            IERC20Upgradeable(_tokenAddr).transfer(_to, _amount);
         }
     }
 

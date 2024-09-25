@@ -1,13 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
-import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
 import "./IMuonClient.sol";
 
-abstract contract AbstractPrizetapRaffle is AccessControl, Pausable {
-    using ECDSA for bytes32;
+abstract contract AbstractPrizetapRaffle is
+    Initializable,
+    AccessControlUpgradeable,
+    PausableUpgradeable
+{
+    using ECDSAUpgradeable for bytes32;
 
     enum Status {
         OPEN,
@@ -37,9 +42,9 @@ abstract contract AbstractPrizetapRaffle is AccessControl, Pausable {
     // raffleId => lastNotWinnerIndex
     mapping(uint256 => uint256) public lastNotWinnerIndexes;
 
-    uint256 public lastRaffleId = 0;
+    uint256 public lastRaffleId;
 
-    uint256 public validationPeriod = 7 days;
+    uint256 public validationPeriod;
 
     uint256 public muonAppId;
 
@@ -83,14 +88,17 @@ abstract contract AbstractPrizetapRaffle is AccessControl, Pausable {
         _;
     }
 
-    constructor(
+    function __AbstractPrizetapRaffle_init(
         uint256 _muonAppId,
         IMuonClient.PublicKey memory _muonPublicKey,
         address _muon,
         address _muonValidGateway,
         address _admin,
         address _operator
-    ) {
+    ) internal initializer {
+        __AccessControl_init();
+        __Pausable_init();
+
         _setupRole(DEFAULT_ADMIN_ROLE, _admin);
         _setupRole(OPERATOR_ROLE, _operator);
         muonAppId = _muonAppId;
@@ -98,6 +106,8 @@ abstract contract AbstractPrizetapRaffle is AccessControl, Pausable {
         muon = IMuonClient(_muon);
         muonValidGateway = _muonValidGateway;
     }
+
+    function __AbstractPrizetapRaffle_init_unchained() internal initializer {}
 
     function setValidationPeriod(
         uint256 periodSeconds
